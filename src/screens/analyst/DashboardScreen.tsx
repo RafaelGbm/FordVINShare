@@ -9,15 +9,19 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { router } from 'expo-router';
+
 import { COLORS } from '../../constants';
-import { AnalystTabScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../utils/store';
 
-type Props = AnalystTabScreenProps<'Dashboard'>;
-
-export default function DashboardScreen({ }: Props) {
+export default function DashboardScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+
+  const handleLogout = () => {
+    logout();
+    router.replace('/');
+  };
 
   const kpis = [
     { label: 'Veículos em Garantia', value: '428', icon: 'car' },
@@ -35,7 +39,7 @@ export default function DashboardScreen({ }: Props) {
             <Text style={styles.greeting}>Olá, {user?.name?.split(' ')[0]}</Text>
             <Text style={styles.role}>Analista - São Paulo</Text>
           </View>
-          <TouchableOpacity onPress={() => logout()} style={styles.logoutBtn}>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
             <MaterialCommunityIcons name="logout" size={24} color={COLORS.gray} />
           </TouchableOpacity>
         </View>

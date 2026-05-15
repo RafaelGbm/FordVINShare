@@ -1,11 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { COLORS } from '../../constants';
-import { AnalystTabScreenProps } from '../../navigation/types';
 
-type Props = AnalystTabScreenProps<'Leads'>;
-
-export default function LeadsScreen({ }: Props) {
+export default function LeadsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>

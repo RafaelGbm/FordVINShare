@@ -1,11 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { COLORS } from '../../constants';
-import { ClientTabScreenProps } from '../../navigation/types';
 
-type Props = ClientTabScreenProps<'Chat'>;
-
-export default function ChatScreen({ }: Props) {
+export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>

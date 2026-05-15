@@ -1,11 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { COLORS } from '../../constants';
-import { AnalystTabScreenProps } from '../../navigation/types';
 
-type Props = AnalystTabScreenProps<'Segmentation'>;
-
-export default function SegmentationScreen({ }: Props) {
+export default function SegmentationScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
