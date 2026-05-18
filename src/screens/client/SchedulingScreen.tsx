@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,50 +6,119 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
+import { useMyVehicles } from '../../hooks/useVehicles';
+import { useDealerships, useDealershipAvailability } from '../../hooks/useDealerships';
+import {
+  useServiceTypes,
+  useCreateAppointment,
+} from '../../hooks/useAppointments';
+import { ServiceType } from '../../services/services.service';
+import { ApiError } from '../../services/api';
 
 type Step = 1 | 2 | 3;
 
-const SERVICES = [
-  { id: 'revision', name: 'Revisão Programada', desc: 'Inspeção dos 40.000 km', icon: 'wrench', tag: 'GRATUITA', tagColor: COLORS.success, time: '~ 2h' },
-  { id: 'oil', name: 'Troca de Óleo', desc: 'Óleo + filtros originais', icon: 'oil', tag: null, time: '~ 1h' },
-  { id: 'tire', name: 'Pneus & Alinhamento', desc: 'Revisão e balanceamento', icon: 'tire', tag: null, time: '~ 1h30' },
-  { id: 'diag', name: 'Diagnóstico Eletrônico', desc: 'Scanner Ford IDS oficial', icon: 'cog', tag: 'PREMIUM', tagColor: '#f5a623', time: '~ 45 min' },
-];
+const SERVICE_META: Record<ServiceType, { icon: string; desc: string; time: string }> = {
+  REVIEW: { icon: 'wrench', desc: 'Inspeção programada Ford', time: '~ 2h' },
+  OIL_CHANGE: { icon: 'oil', desc: 'Óleo + filtros originais', time: '~ 1h' },
+  WARRANTY: { icon: 'shield-check', desc: 'Atendimento em garantia', time: '~ 1h30' },
+  REPAIR: { icon: 'cog', desc: 'Diagnóstico e reparo', time: 'A definir' },
+};
 
-const DEALERS = [
-  { id: 'sp1', name: 'Ford SP Centro', addr: 'Av. Paulista, 1500', distance: '2.3 km', rating: 4.8, slots: 4 },
-  { id: 'sp2', name: 'Ford Tatuapé', addr: 'R. Tuiuti, 850', distance: '5.7 km', rating: 4.6, slots: 7 },
-  { id: 'sp3', name: 'Ford Morumbi', addr: 'Av. Giovanni Gronchi, 220', distance: '8.1 km', rating: 4.9, slots: 2 },
-];
+const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-const DATES = [
-  { day: '14', weekday: 'Qui', month: 'Mai' },
-  { day: '15', weekday: 'Sex', month: 'Mai' },
-  { day: '16', weekday: 'Sáb', month: 'Mai' },
-  { day: '19', weekday: 'Ter', month: 'Mai' },
-  { day: '20', weekday: 'Qua', month: 'Mai' },
-];
+function buildNextDays(count: number) {
+  const out = [];
+  const today = new Date();
+  for (let i = 1; i <= count; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    out.push({
+      iso: d.toISOString().slice(0, 10), // YYYY-MM-DD
+      day: String(d.getDate()).padStart(2, '0'),
+      weekday: WEEKDAYS[d.getDay()],
+      month: MONTHS[d.getMonth()],
+    });
+  }
+  return out;
+}
 
-const TIMES = ['08:00', '09:30', '11:00', '13:30', '15:00', '16:30'];
+// User's coords placeholder (same as LocatorScreen). Replace with expo-location later.
+const USER_COORDS = { lat: -23.55, lng: -46.63 };
 
 export default function SchedulingScreen() {
   const [step, setStep] = useState<Step>(1);
-  const [service, setService] = useState<string | null>(null);
+  const [service, setService] = useState<ServiceType | null>(null);
   const [dealer, setDealer] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
 
+  const DATES = useMemo(() => buildNextDays(7), []);
+
+  const vehiclesQuery = useMyVehicles();
+  const vehicle = vehiclesQuery.data?.[0];
+
+  const serviceTypesQuery = useServiceTypes();
+  const dealershipsQuery = useDealerships({
+    lat: USER_COORDS.lat,
+    lng: USER_COORDS.lng,
+    radiusKm: 20,
+    service: service ?? undefined,
+  });
+  const availabilityQuery = useDealershipAvailability(
+    dealer ?? undefined,
+    service ?? undefined,
+    date ?? undefined
+  );
+
+  const createMutation = useCreateAppointment();
+
   const canContinue =
-    (step === 1 && service) ||
-    (step === 2 && dealer) ||
-    (step === 3 && date && time);
+    (step === 1 && !!service) ||
+    (step === 2 && !!dealer) ||
+    (step === 3 && !!date && !!time && !createMutation.isPending);
 
   const handleNext = () => {
-    if (step < 3) setStep((step + 1) as Step);
+    if (step < 3) {
+      setStep((step + 1) as Step);
+      return;
+    }
+    handleConfirm();
+  };
+
+  const handleConfirm = async () => {
+    if (!vehicle || !dealer || !service || !date || !time) return;
+
+    const scheduledAt = `${date}T${time}:00-03:00`;
+
+    try {
+      await createMutation.mutateAsync({
+        vehicleId: vehicle.id,
+        dealershipId: dealer,
+        serviceTypeId: service,
+        scheduledAt,
+      });
+      Alert.alert(
+        'Agendamento confirmado',
+        'Você receberá uma notificação com os detalhes.',
+        [{ text: 'OK', onPress: () => router.replace('/(client)/home') }]
+      );
+    } catch (e) {
+      const message =
+        e instanceof ApiError
+          ? e.problem.status === 409
+            ? 'Esse horário já foi reservado. Escolha outro.'
+            : e.problem.detail || e.problem.title
+          : 'Não foi possível confirmar o agendamento.';
+      Alert.alert('Erro', message);
+    }
   };
 
   const handleBack = () => {
@@ -119,47 +188,58 @@ export default function SchedulingScreen() {
             <Text style={styles.sectionTitle}>Qual serviço você precisa?</Text>
             <Text style={styles.sectionSub}>Escolha o tipo de atendimento</Text>
 
-            {SERVICES.map((s) => (
-              <TouchableOpacity
-                key={s.id}
-                style={[styles.serviceCard, service === s.id && styles.serviceCardActive]}
-                onPress={() => setService(s.id)}
-                activeOpacity={0.85}
-              >
-                <View
-                  style={[
-                    styles.serviceIcon,
-                    service === s.id && { backgroundColor: COLORS.primary },
-                  ]}
+            {serviceTypesQuery.isLoading && (
+              <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                <ActivityIndicator color={COLORS.primary} />
+              </View>
+            )}
+
+            {(serviceTypesQuery.data ?? []).map((s) => {
+              const meta = SERVICE_META[s.id];
+              const isFree = s.freeWithWarranty && vehicle?.warrantyStatus === 'ACTIVE';
+              const active = service === s.id;
+              return (
+                <TouchableOpacity
+                  key={s.id}
+                  style={[styles.serviceCard, active && styles.serviceCardActive]}
+                  onPress={() => setService(s.id)}
+                  activeOpacity={0.85}
                 >
+                  <View
+                    style={[
+                      styles.serviceIcon,
+                      active && { backgroundColor: COLORS.primary },
+                    ]}
+                  >
+                    <MaterialCommunityIcons
+                      name={meta.icon as any}
+                      size={26}
+                      color={active ? '#fff' : COLORS.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.serviceHead}>
+                      <Text style={styles.serviceName}>{s.label}</Text>
+                      {isFree && (
+                        <View style={[styles.tag, { backgroundColor: COLORS.success }]}>
+                          <Text style={styles.tagText}>GRATUITA</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.serviceDesc}>{meta.desc}</Text>
+                    <View style={styles.serviceMeta}>
+                      <MaterialCommunityIcons name="clock-outline" size={12} color={COLORS.gray} />
+                      <Text style={styles.serviceMetaText}>{meta.time}</Text>
+                    </View>
+                  </View>
                   <MaterialCommunityIcons
-                    name={s.icon as any}
-                    size={26}
-                    color={service === s.id ? '#fff' : COLORS.primary}
+                    name={active ? 'radiobox-marked' : 'radiobox-blank'}
+                    size={22}
+                    color={active ? COLORS.primary : COLORS.border}
                   />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.serviceHead}>
-                    <Text style={styles.serviceName}>{s.name}</Text>
-                    {s.tag && (
-                      <View style={[styles.tag, { backgroundColor: s.tagColor }]}>
-                        <Text style={styles.tagText}>{s.tag}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.serviceDesc}>{s.desc}</Text>
-                  <View style={styles.serviceMeta}>
-                    <MaterialCommunityIcons name="clock-outline" size={12} color={COLORS.gray} />
-                    <Text style={styles.serviceMetaText}>{s.time}</Text>
-                  </View>
-                </View>
-                <MaterialCommunityIcons
-                  name={service === s.id ? 'radiobox-marked' : 'radiobox-blank'}
-                  size={22}
-                  color={service === s.id ? COLORS.primary : COLORS.border}
-                />
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -175,45 +255,58 @@ export default function SchedulingScreen() {
               <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.primary} />
             </View>
 
-            {DEALERS.map((d) => (
-              <TouchableOpacity
-                key={d.id}
-                style={[styles.dealerCard, dealer === d.id && styles.dealerCardActive]}
-                onPress={() => setDealer(d.id)}
-                activeOpacity={0.85}
-              >
-                <View style={styles.dealerLeft}>
-                  <View style={styles.dealerIconBg}>
-                    <MaterialCommunityIcons name="store" size={22} color={COLORS.primary} />
-                  </View>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.dealerName}>{d.name}</Text>
-                  <Text style={styles.dealerAddr}>{d.addr}</Text>
-                  <View style={styles.dealerMeta}>
-                    <View style={styles.dealerMetaItem}>
-                      <MaterialCommunityIcons name="map-marker" size={12} color={COLORS.gray} />
-                      <Text style={styles.dealerMetaText}>{d.distance}</Text>
-                    </View>
-                    <View style={styles.dealerMetaItem}>
-                      <MaterialCommunityIcons name="star" size={12} color="#f5a623" />
-                      <Text style={styles.dealerMetaText}>{d.rating}</Text>
-                    </View>
-                    <View style={styles.dealerMetaItem}>
-                      <MaterialCommunityIcons name="calendar-clock" size={12} color={COLORS.success} />
-                      <Text style={[styles.dealerMetaText, { color: COLORS.success }]}>
-                        {d.slots} vagas
-                      </Text>
+            {dealershipsQuery.isLoading && (
+              <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                <ActivityIndicator color={COLORS.primary} />
+              </View>
+            )}
+
+            {!dealershipsQuery.isLoading && (dealershipsQuery.data ?? []).length === 0 && (
+              <View style={[styles.dealerCard, { alignItems: 'center', padding: 20 }]}>
+                <Text style={{ color: COLORS.gray, fontSize: 13 }}>
+                  Nenhuma concessionária disponível para esse serviço.
+                </Text>
+              </View>
+            )}
+
+            {(dealershipsQuery.data ?? []).map((d) => {
+              const active = dealer === d.id;
+              return (
+                <TouchableOpacity
+                  key={d.id}
+                  style={[styles.dealerCard, active && styles.dealerCardActive]}
+                  onPress={() => setDealer(d.id)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.dealerLeft}>
+                    <View style={styles.dealerIconBg}>
+                      <MaterialCommunityIcons name="store" size={22} color={COLORS.primary} />
                     </View>
                   </View>
-                </View>
-                <MaterialCommunityIcons
-                  name={dealer === d.id ? 'radiobox-marked' : 'radiobox-blank'}
-                  size={22}
-                  color={dealer === d.id ? COLORS.primary : COLORS.border}
-                />
-              </TouchableOpacity>
-            ))}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.dealerName}>{d.name}</Text>
+                    <Text style={styles.dealerAddr}>{d.address}</Text>
+                    <View style={styles.dealerMeta}>
+                      <View style={styles.dealerMetaItem}>
+                        <MaterialCommunityIcons name="map-marker" size={12} color={COLORS.gray} />
+                        <Text style={styles.dealerMetaText}>{d.distanceKm.toFixed(1)} km</Text>
+                      </View>
+                      <View style={styles.dealerMetaItem}>
+                        <MaterialCommunityIcons name="clock-outline" size={12} color={COLORS.gray} />
+                        <Text style={styles.dealerMetaText} numberOfLines={1}>
+                          {d.openingHours}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <MaterialCommunityIcons
+                    name={active ? 'radiobox-marked' : 'radiobox-blank'}
+                    size={22}
+                    color={active ? COLORS.primary : COLORS.border}
+                  />
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -226,13 +319,15 @@ export default function SchedulingScreen() {
             <Text style={styles.minorLabel}>DATA</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
               {DATES.map((d) => {
-                const id = `${d.day}/${d.month}`;
-                const selected = date === id;
+                const selected = date === d.iso;
                 return (
                   <TouchableOpacity
-                    key={id}
+                    key={d.iso}
                     style={[styles.dateCard, selected && styles.dateCardActive]}
-                    onPress={() => setDate(id)}
+                    onPress={() => {
+                      setDate(d.iso);
+                      setTime(null);
+                    }}
                     activeOpacity={0.85}
                   >
                     <Text style={[styles.dateWeekday, selected && styles.dateWeekdayActive]}>
@@ -248,23 +343,49 @@ export default function SchedulingScreen() {
             </ScrollView>
 
             <Text style={[styles.minorLabel, { marginTop: 18 }]}>HORÁRIO</Text>
-            <View style={styles.timeGrid}>
-              {TIMES.map((t) => {
-                const selected = time === t;
-                return (
-                  <TouchableOpacity
-                    key={t}
-                    style={[styles.timeChip, selected && styles.timeChipActive]}
-                    onPress={() => setTime(t)}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[styles.timeChipText, selected && styles.timeChipTextActive]}>
-                      {t}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+
+            {!date && (
+              <Text style={{ color: COLORS.gray, fontSize: 12, paddingVertical: 8 }}>
+                Selecione uma data para ver os horários disponíveis.
+              </Text>
+            )}
+
+            {date && availabilityQuery.isLoading && (
+              <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                <ActivityIndicator color={COLORS.primary} size="small" />
+              </View>
+            )}
+
+            {date && !availabilityQuery.isLoading && (availabilityQuery.data?.slots ?? []).length === 0 && (
+              <Text style={{ color: COLORS.gray, fontSize: 12, paddingVertical: 8 }}>
+                Sem horários disponíveis nessa data.
+              </Text>
+            )}
+
+            {date && !availabilityQuery.isLoading && (
+              <View style={styles.timeGrid}>
+                {(availabilityQuery.data?.slots ?? []).map((slot) => {
+                  const selected = time === slot.time;
+                  return (
+                    <TouchableOpacity
+                      key={slot.time}
+                      style={[
+                        styles.timeChip,
+                        selected && styles.timeChipActive,
+                        !slot.available && { opacity: 0.4 },
+                      ]}
+                      onPress={() => slot.available && setTime(slot.time)}
+                      disabled={!slot.available}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.timeChipText, selected && styles.timeChipTextActive]}>
+                        {slot.time}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
 
             {/* Summary */}
             {service && dealer && date && time && (
@@ -273,14 +394,18 @@ export default function SchedulingScreen() {
                 <SummaryRow
                   icon="wrench"
                   label="Serviço"
-                  value={SERVICES.find((s) => s.id === service)?.name || ''}
+                  value={serviceTypesQuery.data?.find((s) => s.id === service)?.label || ''}
                 />
                 <SummaryRow
                   icon="store"
                   label="Local"
-                  value={DEALERS.find((d) => d.id === dealer)?.name || ''}
+                  value={dealershipsQuery.data?.find((d) => d.id === dealer)?.name || ''}
                 />
-                <SummaryRow icon="calendar" label="Data" value={`${date} às ${time}`} />
+                <SummaryRow
+                  icon="calendar"
+                  label="Data"
+                  value={`${new Date(date).toLocaleDateString('pt-BR')} às ${time}`}
+                />
               </View>
             )}
           </View>
@@ -297,12 +422,20 @@ export default function SchedulingScreen() {
           disabled={!canContinue}
           activeOpacity={0.85}
         >
-          <Text style={styles.ctaText}>{step === 3 ? 'Confirmar agendamento' : 'Continuar'}</Text>
-          <MaterialCommunityIcons
-            name={step === 3 ? 'check-circle' : 'arrow-right'}
-            size={20}
-            color="#fff"
-          />
+          {createMutation.isPending ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Text style={styles.ctaText}>
+                {step === 3 ? 'Confirmar agendamento' : 'Continuar'}
+              </Text>
+              <MaterialCommunityIcons
+                name={step === 3 ? 'check-circle' : 'arrow-right'}
+                size={20}
+                color="#fff"
+              />
+            </>
+          )}
         </TouchableOpacity>
       </View>
     </View>
