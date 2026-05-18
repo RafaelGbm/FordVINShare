@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,74 +8,61 @@ import {
   TextInput,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS } from '../../constants';
+import { useDealerships } from '../../hooks/useDealerships';
+import { ServiceType } from '../../services/services.service';
 
 const { width } = Dimensions.get('window');
 
-const FILTERS = [
+type FilterId = 'all' | ServiceType;
+
+const FILTERS: { id: FilterId; label: string; icon: string }[] = [
   { id: 'all', label: 'Todas', icon: 'view-grid' },
-  { id: 'warranty', label: 'Em garantia', icon: 'shield-check' },
-  { id: '24h', label: '24h', icon: 'clock-outline' },
-  { id: 'premium', label: 'Premium', icon: 'star' },
+  { id: 'REVIEW', label: 'Revisão', icon: 'wrench' },
+  { id: 'OIL_CHANGE', label: 'Óleo', icon: 'oil' },
+  { id: 'WARRANTY', label: 'Garantia', icon: 'shield-check' },
+  { id: 'REPAIR', label: 'Reparo', icon: 'cog' },
 ];
 
-const DEALERS = [
-  {
-    id: 'sp1',
-    name: 'Ford SP Centro',
-    addr: 'Av. Paulista, 1500 - Bela Vista',
-    distance: '2.3 km',
-    rating: 4.8,
-    reviews: 1240,
-    open: true,
-    closesAt: '19h',
-    services: ['Revisão', 'Pneus', 'Funilaria'],
-    badge: 'PREMIUM',
-  },
-  {
-    id: 'sp2',
-    name: 'Ford Tatuapé',
-    addr: 'R. Tuiuti, 850 - Tatuapé',
-    distance: '5.7 km',
-    rating: 4.6,
-    reviews: 832,
-    open: true,
-    closesAt: '18h',
-    services: ['Revisão', 'Diagnóstico'],
-    badge: null,
-  },
-  {
-    id: 'sp3',
-    name: 'Ford Morumbi',
-    addr: 'Av. Giovanni Gronchi, 220',
-    distance: '8.1 km',
-    rating: 4.9,
-    reviews: 2104,
-    open: false,
-    closesAt: '08h amanhã',
-    services: ['24h', 'Funilaria', 'Pintura'],
-    badge: 'PREMIUM',
-  },
-  {
-    id: 'sp4',
-    name: 'Ford Pinheiros',
-    addr: 'R. Teodoro Sampaio, 1100',
-    distance: '11.4 km',
-    rating: 4.5,
-    reviews: 567,
-    open: true,
-    closesAt: '20h',
-    services: ['Revisão', 'Pneus'],
-    badge: null,
-  },
-];
+const SERVICE_LABEL: Record<ServiceType, string> = {
+  REVIEW: 'Revisão',
+  OIL_CHANGE: 'Óleo',
+  WARRANTY: 'Garantia',
+  REPAIR: 'Reparo',
+};
+
+// User's current location placeholder. Once expo-location is wired,
+// replace with the geolocation watcher.
+const USER_COORDS = { lat: -23.55, lng: -46.63 };
+const DEFAULT_RADIUS_KM = 20;
 
 export default function LocatorScreen() {
-  const [filter, setFilter] = useState('all');
-  const [selected, setSelected] = useState<string | null>('sp1');
+  const [filter, setFilter] = useState<FilterId>('all');
+  const [selected, setSelected] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  const { data, isLoading, isError, refetch } = useDealerships({
+    lat: USER_COORDS.lat,
+    lng: USER_COORDS.lng,
+    radiusKm: DEFAULT_RADIUS_KM,
+    service: filter === 'all' ? undefined : filter,
+  });
+
+  const dealerships = useMemo(() => {
+    const list = data ?? [];
+    const term = search.trim().toLowerCase();
+    if (!term) return list;
+    return list.filter(
+      (d) =>
+        d.name.toLowerCase().includes(term) ||
+        d.address.toLowerCase().includes(term) ||
+        d.city.toLowerCase().includes(term)
+    );
+  }, [data, search]);
 
   return (
     <View style={styles.root}>
@@ -101,6 +88,9 @@ export default function LocatorScreen() {
             style={styles.searchInput}
             placeholder="Buscar por nome ou bairro..."
             placeholderTextColor={COLORS.gray}
+            value={search}
+            onChangeText={setSearch}
+            autoCorrect={false}
           />
           <MaterialCommunityIcons name="crosshairs-gps" size={20} color={COLORS.primary} />
         </View>
@@ -199,14 +189,48 @@ export default function LocatorScreen() {
 
         {/* List */}
         <View style={styles.listHead}>
-          <Text style={styles.listTitle}>{DEALERS.length} concessionárias próximas</Text>
+          <Text style={styles.listTitle}>
+            {isLoading
+              ? 'Carregando concessionárias...'
+              : `${dealerships.length} ${dealerships.length === 1 ? 'concessionária próxima' : 'concessionárias próximas'}`}
+          </Text>
           <TouchableOpacity style={styles.sortBtn}>
             <MaterialCommunityIcons name="sort-variant" size={14} color={COLORS.primary} />
             <Text style={styles.sortText}>Distância</Text>
           </TouchableOpacity>
         </View>
 
-        {DEALERS.map((d) => {
+        {isLoading && (
+          <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+            <ActivityIndicator color={COLORS.primary} />
+          </View>
+        )}
+
+        {isError && (
+          <View style={[styles.dealerCard, { padding: 20 }]}>
+            <Text style={{ color: '#c62828', fontWeight: '700' }}>Não foi possível carregar</Text>
+            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 4 }}>
+              Verifique sua conexão e tente novamente.
+            </Text>
+            <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 10 }}>
+              <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Tentar de novo</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!isLoading && !isError && dealerships.length === 0 && (
+          <View style={[styles.dealerCard, { alignItems: 'center', padding: 24 }]}>
+            <MaterialCommunityIcons name="store-off" size={40} color={COLORS.border} />
+            <Text style={{ fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>
+              Nenhuma concessionária encontrada
+            </Text>
+            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 4, textAlign: 'center' }}>
+              Ajuste o filtro ou aumente o raio de busca.
+            </Text>
+          </View>
+        )}
+
+        {dealerships.map((d) => {
           const active = selected === d.id;
           return (
             <TouchableOpacity
@@ -221,38 +245,20 @@ export default function LocatorScreen() {
                 </View>
 
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.dealerName}>{d.name}</Text>
-                    {d.badge && (
-                      <View style={styles.premiumBadge}>
-                        <MaterialCommunityIcons name="star" size={9} color="#f5a623" />
-                        <Text style={styles.premiumText}>{d.badge}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.dealerAddr}>{d.addr}</Text>
+                  <Text style={styles.dealerName}>{d.name}</Text>
+                  <Text style={styles.dealerAddr}>
+                    {d.address} · {d.city}/{d.state}
+                  </Text>
                 </View>
 
-                <Text style={styles.dealerDistance}>{d.distance}</Text>
+                <Text style={styles.dealerDistance}>{d.distanceKm.toFixed(1)} km</Text>
               </View>
 
               <View style={styles.dealerMeta}>
                 <View style={styles.metaItem}>
-                  <MaterialCommunityIcons name="star" size={13} color="#f5a623" />
-                  <Text style={styles.metaText}>
-                    {d.rating} <Text style={styles.metaSub}>({d.reviews})</Text>
-                  </Text>
-                </View>
-                <View style={styles.metaDivider} />
-                <View style={styles.metaItem}>
-                  <View
-                    style={[
-                      styles.statusDot,
-                      { backgroundColor: d.open ? COLORS.success : '#ea4335' },
-                    ]}
-                  />
-                  <Text style={[styles.metaText, { color: d.open ? COLORS.success : '#ea4335' }]}>
-                    {d.open ? `Aberto até ${d.closesAt}` : `Fecha às ${d.closesAt}`}
+                  <MaterialCommunityIcons name="clock-outline" size={13} color={COLORS.gray} />
+                  <Text style={[styles.metaText, { color: COLORS.gray }]} numberOfLines={1}>
+                    {d.openingHours}
                   </Text>
                 </View>
               </View>
@@ -260,7 +266,7 @@ export default function LocatorScreen() {
               <View style={styles.servicesRow}>
                 {d.services.map((s) => (
                   <View key={s} style={styles.serviceChip}>
-                    <Text style={styles.serviceChipText}>{s}</Text>
+                    <Text style={styles.serviceChipText}>{SERVICE_LABEL[s]}</Text>
                   </View>
                 ))}
               </View>
