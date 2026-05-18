@@ -1,10 +1,71 @@
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
-import { useAuthStore } from '../src/utils/store';
+
 import LoginScreen from '../src/screens/LoginScreen';
+import { useAuthStore } from '../src/utils/store';
+import { secureStorage } from '../src/services/secureStorage';
+import { authService } from '../src/services/auth.service';
+import { COLORS } from '../src/constants';
+import FordLogo from '../src/components/FordLogo';
 
 export default function Index() {
   const user = useAuthStore((state) => state.user);
   const role = useAuthStore((state) => state.role);
+  const setUser = useAuthStore((state) => state.setUser);
+  const [bootstrapping, setBootstrapping] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      // If we already have the user in memory, nothing to do.
+      if (user) {
+        if (!cancelled) setBootstrapping(false);
+        return;
+      }
+
+      const token = await secureStorage.getAccessToken();
+      if (!token) {
+        if (!cancelled) setBootstrapping(false);
+        return;
+      }
+
+      try {
+        const me = await authService.getMe();
+        if (cancelled) return;
+        const mappedRole = me.role === 'ANALYST' ? 'analyst' : 'client';
+        setUser(
+          {
+            id: me.userId,
+            email: me.email,
+            name: me.name,
+            phone: me.phone,
+            role: mappedRole,
+            created_at: me.createdAt,
+          },
+          mappedRole
+        );
+      } catch {
+        // Refresh flow already cleared storage in the interceptor.
+      } finally {
+        if (!cancelled) setBootstrapping(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (bootstrapping) {
+    return (
+      <View style={styles.splash}>
+        <FordLogo width={200} height={80} />
+        <ActivityIndicator size="small" color="#fff" style={{ marginTop: 24 }} />
+      </View>
+    );
+  }
 
   if (user && role === 'client') {
     return <Redirect href="/(client)/home" />;
@@ -15,3 +76,12 @@ export default function Index() {
 
   return <LoginScreen />;
 }
+
+const styles = StyleSheet.create({
+  splash: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
