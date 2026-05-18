@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -7,27 +7,76 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { useAuthStore, getMockUser } from '../../utils/store';
+import { useAuthStore } from '../../utils/store';
 import { COLORS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
 import { authService } from '../../services/auth.service';
+import { useMyVehicles, useVehicleWarranty, useMaintenanceAlerts } from '../../hooks/useVehicles';
+import { useMyServices } from '../../hooks/useServices';
+import { ServiceType } from '../../services/services.service';
+import { WarrantyStatus } from '../../services/vehicles.service';
 
 const { width } = Dimensions.get('window');
+
+const SERVICE_TYPE_LABEL: Record<ServiceType, string> = {
+  REVIEW: 'Revisão Preventiva',
+  OIL_CHANGE: 'Troca de Óleo',
+  WARRANTY: 'Serviço em garantia',
+  REPAIR: 'Reparo',
+};
+
+const SERVICE_TYPE_ICON: Record<ServiceType, string> = {
+  REVIEW: 'wrench',
+  OIL_CHANGE: 'oil',
+  WARRANTY: 'shield-check',
+  REPAIR: 'cog',
+};
+
+const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
+  REVIEW: COLORS.success,
+  OIL_CHANGE: COLORS.secondary,
+  WARRANTY: COLORS.primary,
+  REPAIR: '#9c27b0',
+};
+
+const WARRANTY_LABEL: Record<WarrantyStatus, string> = {
+  ACTIVE: 'Ativa',
+  EXPIRING_SOON: 'Vencendo em breve',
+  EXPIRED: 'Vencida',
+};
+
+function formatDateBR(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatShortDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+}
 
 export default function HomeScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const [mockData] = useState(() => getMockUser('client1'));
 
-  const vehicle = mockData.vehicle;
-  const nextRevisionKm = Math.ceil(vehicle.km / 10000) * 10000;
-  const kmToRevision = nextRevisionKm - vehicle.km;
-  const warrantyDaysLeft = 245;
-  const warrantyPct = Math.min(100, (warrantyDaysLeft / 365) * 100);
+  const vehiclesQuery = useMyVehicles();
+  const vehicle = vehiclesQuery.data?.[0];
+  const warrantyQuery = useVehicleWarranty(vehicle?.id);
+  const alertsQuery = useMaintenanceAlerts(vehicle?.id);
+  const servicesQuery = useMyServices({ vehicleId: vehicle?.id, size: 3 });
+
+  const warranty = warrantyQuery.data;
+  const firstAlert = alertsQuery.data?.[0];
+  const recentServices = servicesQuery.data?.content ?? [];
+
+  const warrantyPct = warranty
+    ? Math.min(100, Math.max(0, (warranty.daysRemaining / 365) * 100))
+    : 0;
 
   const handleLogout = async () => {
     await authService.logout();
@@ -62,66 +111,131 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Vehicle Card */}
-        <View style={styles.vehicleCard}>
-          <View style={styles.vehicleHead}>
-            <View>
-              <Text style={styles.vehicleLabel}>SEU VEÍCULO</Text>
-              <Text style={styles.vehicleName}>Ford {vehicle.model}</Text>
-              <Text style={styles.vehiclePlate}>{vehicle.year} · ABC-1D23</Text>
-            </View>
-            <View style={styles.vehicleIcon}>
-              <MaterialCommunityIcons name="car-sports" size={36} color={COLORS.primary} />
-            </View>
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{(vehicle.km / 1000).toFixed(0)}k</Text>
-              <Text style={styles.statLabel}>km rodados</Text>
-            </View>
-            <View style={styles.statSep} />
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{warrantyDaysLeft}</Text>
-              <Text style={styles.statLabel}>dias garantia</Text>
-            </View>
-            <View style={styles.statSep} />
-            <View style={styles.statBox}>
-              <Text style={[styles.statValue, { color: COLORS.success }]}>A+</Text>
-              <Text style={styles.statLabel}>condição</Text>
-            </View>
-          </View>
-
-          {/* Warranty progress */}
-          <View style={styles.warrantyBlock}>
-            <View style={styles.warrantyHead}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <MaterialCommunityIcons name="shield-check" size={16} color={COLORS.success} />
-                <Text style={styles.warrantyLabel}>Garantia Ford Plus</Text>
-              </View>
-              <Text style={styles.warrantyPct}>{warrantyPct.toFixed(0)}%</Text>
-            </View>
-            <View style={styles.warrantyBar}>
-              <View style={[styles.warrantyFill, { width: `${warrantyPct}%` }]} />
-            </View>
-            <Text style={styles.warrantyHint}>Válida até 12 de janeiro de 2027</Text>
-          </View>
-        </View>
-
-        {/* Alert */}
-        <View style={styles.alert}>
-          <View style={styles.alertIcon}>
-            <MaterialCommunityIcons name="wrench-clock" size={22} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.alertTitle}>Revisão programada</Text>
-            <Text style={styles.alertText}>
-              Faltam {kmToRevision.toLocaleString('pt-BR')} km · revisão gratuita
+        {vehiclesQuery.isLoading && (
+          <View style={[styles.vehicleCard, { paddingVertical: 40, alignItems: 'center' }]}>
+            <ActivityIndicator color={COLORS.primary} />
+            <Text style={{ color: COLORS.gray, marginTop: 8, fontSize: 12 }}>
+              Carregando seu veículo...
             </Text>
           </View>
-          <TouchableOpacity style={styles.alertCta}>
-            <MaterialCommunityIcons name="arrow-right" size={18} color={COLORS.primary} />
-          </TouchableOpacity>
-        </View>
+        )}
+
+        {vehiclesQuery.isError && (
+          <View style={[styles.vehicleCard, { padding: 20 }]}>
+            <Text style={{ color: '#c62828', fontWeight: '700' }}>Não foi possível carregar</Text>
+            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 4 }}>
+              Verifique sua conexão e tente novamente.
+            </Text>
+            <TouchableOpacity onPress={() => vehiclesQuery.refetch()} style={{ marginTop: 10 }}>
+              <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Tentar de novo</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!vehiclesQuery.isLoading && !vehiclesQuery.isError && !vehicle && (
+          <View style={[styles.vehicleCard, { alignItems: 'center', padding: 24 }]}>
+            <MaterialCommunityIcons name="car-off" size={40} color={COLORS.border} />
+            <Text style={{ fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>
+              Nenhum veículo cadastrado
+            </Text>
+            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 4, textAlign: 'center' }}>
+              Adicione seu Ford no perfil para acompanhar garantia e revisões.
+            </Text>
+          </View>
+        )}
+
+        {vehicle && (
+          <View style={styles.vehicleCard}>
+            <View style={styles.vehicleHead}>
+              <View>
+                <Text style={styles.vehicleLabel}>SEU VEÍCULO</Text>
+                <Text style={styles.vehicleName}>Ford {vehicle.model}</Text>
+                <Text style={styles.vehiclePlate}>
+                  {vehicle.year} · {vehicle.plate}
+                </Text>
+              </View>
+              <View style={styles.vehicleIcon}>
+                <MaterialCommunityIcons name="car-sports" size={36} color={COLORS.primary} />
+              </View>
+            </View>
+
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>
+                  {(vehicle.currentKm / 1000).toFixed(0)}k
+                </Text>
+                <Text style={styles.statLabel}>km rodados</Text>
+              </View>
+              <View style={styles.statSep} />
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>
+                  {warranty?.daysRemaining ?? '–'}
+                </Text>
+                <Text style={styles.statLabel}>dias garantia</Text>
+              </View>
+              <View style={styles.statSep} />
+              <View style={styles.statBox}>
+                <Text
+                  style={[
+                    styles.statValue,
+                    {
+                      color:
+                        vehicle.warrantyStatus === 'ACTIVE'
+                          ? COLORS.success
+                          : vehicle.warrantyStatus === 'EXPIRING_SOON'
+                            ? '#f5a623'
+                            : '#ea4335',
+                    },
+                  ]}
+                >
+                  {vehicle.warrantyStatus === 'ACTIVE' ? '✓' : '!'}
+                </Text>
+                <Text style={styles.statLabel}>{WARRANTY_LABEL[vehicle.warrantyStatus]}</Text>
+              </View>
+            </View>
+
+            {/* Warranty progress */}
+            {warranty && (
+              <View style={styles.warrantyBlock}>
+                <View style={styles.warrantyHead}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <MaterialCommunityIcons
+                      name="shield-check"
+                      size={16}
+                      color={warranty.status === 'ACTIVE' ? COLORS.success : '#f5a623'}
+                    />
+                    <Text style={styles.warrantyLabel}>Garantia Ford Plus</Text>
+                  </View>
+                  <Text style={styles.warrantyPct}>{warrantyPct.toFixed(0)}%</Text>
+                </View>
+                <View style={styles.warrantyBar}>
+                  <View style={[styles.warrantyFill, { width: `${warrantyPct}%` }]} />
+                </View>
+                <Text style={styles.warrantyHint}>
+                  Válida até {formatDateBR(warranty.endDate)}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Alert (maintenance) */}
+        {firstAlert && (
+          <View style={styles.alert}>
+            <View style={styles.alertIcon}>
+              <MaterialCommunityIcons name="wrench-clock" size={22} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.alertTitle}>{firstAlert.title}</Text>
+              <Text style={styles.alertText}>
+                Faltam {firstAlert.kmRemaining.toLocaleString('pt-BR')} km
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.alertCta}>
+              <MaterialCommunityIcons name="arrow-right" size={18} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Acesso rápido</Text>
@@ -168,28 +282,48 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.timeline}>
-          {[
-            { date: 'Mar 2025', name: 'Revisão Preventiva', km: '40.000 km', icon: 'wrench', color: COLORS.success, dealer: 'Ford SP Centro' },
-            { date: 'Fev 2025', name: 'Troca de Óleo + Filtro', km: '38.500 km', icon: 'oil', color: COLORS.secondary, dealer: 'Ford Tatuapé' },
-            { date: 'Jan 2025', name: 'Alinhamento + Pneus', km: '36.200 km', icon: 'tire', color: '#9c27b0', dealer: 'Ford SP Centro' },
-          ].map((service, i, arr) => (
-            <View key={i} style={styles.timelineRow}>
+          {servicesQuery.isLoading && (
+            <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+              <ActivityIndicator color={COLORS.primary} size="small" />
+            </View>
+          )}
+
+          {!servicesQuery.isLoading && recentServices.length === 0 && (
+            <View style={[styles.timelineCard, { marginLeft: 0, alignItems: 'center', padding: 20 }]}>
+              <Text style={{ color: COLORS.gray, fontSize: 13 }}>
+                Nenhum serviço registrado ainda.
+              </Text>
+            </View>
+          )}
+
+          {recentServices.map((service, i, arr) => (
+            <View key={service.id} style={styles.timelineRow}>
               <View style={styles.timelineDotCol}>
-                <View style={[styles.timelineDot, { backgroundColor: service.color }]}>
-                  <MaterialCommunityIcons name={service.icon as any} size={14} color="#fff" />
+                <View style={[styles.timelineDot, { backgroundColor: SERVICE_TYPE_COLOR[service.serviceType] }]}>
+                  <MaterialCommunityIcons
+                    name={SERVICE_TYPE_ICON[service.serviceType] as any}
+                    size={14}
+                    color="#fff"
+                  />
                 </View>
                 {i < arr.length - 1 && <View style={styles.timelineLine} />}
               </View>
 
               <View style={styles.timelineCard}>
                 <View style={styles.timelineCardHead}>
-                  <Text style={styles.timelineName}>{service.name}</Text>
-                  <Text style={styles.timelineDate}>{service.date}</Text>
+                  <Text style={styles.timelineName}>
+                    {SERVICE_TYPE_LABEL[service.serviceType]}
+                  </Text>
+                  <Text style={styles.timelineDate}>{formatShortDate(service.performedAt)}</Text>
                 </View>
                 <View style={styles.timelineMeta}>
-                  <Text style={styles.timelineMetaItem}>{service.km}</Text>
+                  <Text style={styles.timelineMetaItem} numberOfLines={1}>
+                    {service.summary}
+                  </Text>
                   <Text style={styles.timelineMetaDot}>·</Text>
-                  <Text style={styles.timelineMetaItem}>{service.dealer}</Text>
+                  <Text style={styles.timelineMetaItem} numberOfLines={1}>
+                    {service.dealership}
+                  </Text>
                 </View>
               </View>
             </View>
