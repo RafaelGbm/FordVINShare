@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,112 +7,84 @@ import {
   TouchableOpacity,
   TextInput,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS } from '../../constants';
+import { useCreateLeadAction, useLeads } from '../../hooks/useLeads';
+import { Lead, LeadStatus } from '../../services/leads.service';
+import { ApiError } from '../../services/api';
 
-type Status = 'all' | 'lost' | 'risk' | 'new' | 'loyal';
+type UiStatus = 'all' | 'lost' | 'risk' | 'new' | 'recovered';
 
-const STATUS_FILTERS: { id: Status; label: string; count: number; color: string }[] = [
-  { id: 'all', label: 'Todos', count: 87, color: COLORS.primary },
-  { id: 'lost', label: 'Perdido', count: 12, color: '#ea4335' },
-  { id: 'risk', label: 'Em risco', count: 23, color: '#f5a623' },
-  { id: 'new', label: 'Novo', count: 18, color: COLORS.secondary },
-  { id: 'loyal', label: 'Fiel', count: 34, color: COLORS.success },
-];
+const API_TO_UI: Record<LeadStatus, Exclude<UiStatus, 'all'>> = {
+  PERDIDO: 'lost',
+  EM_RISCO: 'risk',
+  NOVO: 'new',
+  RECUPERADO: 'recovered',
+};
 
-const LEADS = [
-  {
-    id: 'l1',
-    name: 'Carlos Mendes',
-    vehicle: 'Ford Ranger 2019',
-    lastVisit: '14 meses',
-    score: 87,
-    status: 'lost' as Status,
-    nps: 5,
-    plate: 'EFG-7H89',
-    initials: 'CM',
-    color: '#5e35b1',
-  },
-  {
-    id: 'l2',
-    name: 'Patrícia Costa',
-    vehicle: 'Ford EcoSport 2021',
-    lastVisit: '9 meses',
-    score: 72,
-    status: 'risk' as Status,
-    nps: 6,
-    plate: 'XYZ-4M21',
-    initials: 'PC',
-    color: '#e91e63',
-  },
-  {
-    id: 'l3',
-    name: 'Roberto Lima',
-    vehicle: 'Ford Ka 2020',
-    lastVisit: '7 meses',
-    score: 68,
-    status: 'risk' as Status,
-    nps: 7,
-    plate: 'JKL-2N56',
-    initials: 'RL',
-    color: '#ff7043',
-  },
-  {
-    id: 'l4',
-    name: 'Mariana Alves',
-    vehicle: 'Ford Bronco 2024',
-    lastVisit: '1 mês',
-    score: 15,
-    status: 'new' as Status,
-    nps: 9,
-    plate: 'NEW-2024',
-    initials: 'MA',
-    color: '#1e8e3e',
-  },
-  {
-    id: 'l5',
-    name: 'Felipe Santos',
-    vehicle: 'Ford Mustang 2023',
-    lastVisit: '2 meses',
-    score: 8,
-    status: 'loyal' as Status,
-    nps: 10,
-    plate: 'GT5-0023',
-    initials: 'FS',
-    color: COLORS.primary,
-  },
-];
+const STATUS_META: Record<Exclude<UiStatus, 'all'>, { label: string; color: string; bg: string }> = {
+  lost: { label: 'Perdido', color: '#ea4335', bg: '#fce8e6' },
+  risk: { label: 'Em risco', color: '#a36b00', bg: '#fff4e0' },
+  new: { label: 'Novo', color: COLORS.secondary, bg: '#e8efff' },
+  recovered: { label: 'Recuperado', color: COLORS.success, bg: '#e9f7ee' },
+};
 
-function statusStyle(status: Status) {
-  switch (status) {
-    case 'lost':
-      return { color: '#ea4335', bg: '#fce8e6', label: 'Perdido' };
-    case 'risk':
-      return { color: '#a36b00', bg: '#fff4e0', label: 'Em risco' };
-    case 'new':
-      return { color: COLORS.secondary, bg: '#e8efff', label: 'Novo' };
-    case 'loyal':
-      return { color: COLORS.success, bg: '#e9f7ee', label: 'Fiel' };
-    default:
-      return { color: COLORS.gray, bg: '#f5f5f7', label: 'Todos' };
-  }
+const FILTER_ORDER: UiStatus[] = ['all', 'lost', 'risk', 'new', 'recovered'];
+
+const AVATAR_COLORS = ['#5e35b1', '#e91e63', '#ff7043', '#1e8e3e', COLORS.primary, '#00897b', '#8e24aa'];
+
+function initialsFromName(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function avatarColor(id: string) {
+  let sum = 0;
+  for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+
+function formatLastVisit(days: number) {
+  if (days < 30) return `${days} ${days === 1 ? 'dia' : 'dias'}`;
+  const months = Math.floor(days / 30);
+  return `${months} ${months === 1 ? 'mês' : 'meses'}`;
 }
 
 export default function LeadsScreen() {
-  const [filter, setFilter] = useState<Status>('all');
+  const [filter, setFilter] = useState<UiStatus>('all');
   const [search, setSearch] = useState('');
 
-  const filteredLeads = LEADS.filter((l) => filter === 'all' || l.status === filter).filter((l) =>
-    l.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data, isLoading, error, refetch, isRefetching } = useLeads({ size: 200 });
+  const leads = data?.content ?? [];
+
+  const counts = useMemo(() => {
+    const acc: Record<UiStatus, number> = {
+      all: leads.length,
+      lost: 0,
+      risk: 0,
+      new: 0,
+      recovered: 0,
+    };
+    for (const l of leads) acc[API_TO_UI[l.status]]++;
+    return acc;
+  }, [leads]);
+
+  const filteredLeads = useMemo(() => {
+    const term = search.toLowerCase();
+    return leads
+      .filter((l) => filter === 'all' || API_TO_UI[l.status] === filter)
+      .filter((l) => l.customerName.toLowerCase().includes(term));
+  }, [leads, filter, search]);
 
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
 
-      {/* Hero */}
       <View style={styles.hero}>
         <View style={styles.heroBlob} />
 
@@ -121,8 +93,12 @@ export default function LeadsScreen() {
             <Text style={styles.heroSub}>Gestão de carteira</Text>
             <Text style={styles.heroTitle}>Leads</Text>
           </View>
-          <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="dots-horizontal" size={20} color="#fff" />
+          <TouchableOpacity style={styles.iconBtn} onPress={() => refetch()}>
+            <MaterialCommunityIcons
+              name={isRefetching ? 'loading' : 'refresh'}
+              size={20}
+              color="#fff"
+            />
           </TouchableOpacity>
         </View>
 
@@ -146,29 +122,35 @@ export default function LeadsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Status filters */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
           style={styles.filtersScroll}
         >
-          {STATUS_FILTERS.map((f) => {
-            const active = filter === f.id;
+          {FILTER_ORDER.map((id) => {
+            const active = filter === id;
+            const meta =
+              id === 'all'
+                ? { label: 'Todos', color: COLORS.primary }
+                : STATUS_META[id];
             return (
               <TouchableOpacity
-                key={f.id}
-                style={[styles.filterChip, active && { borderColor: f.color, backgroundColor: `${f.color}10` }]}
-                onPress={() => setFilter(f.id)}
+                key={id}
+                style={[
+                  styles.filterChip,
+                  active && { borderColor: meta.color, backgroundColor: `${meta.color}10` },
+                ]}
+                onPress={() => setFilter(id)}
                 activeOpacity={0.85}
               >
-                <View style={[styles.filterDot, { backgroundColor: f.color }]} />
-                <Text style={[styles.filterText, active && { color: f.color }]}>
-                  {f.label}
+                <View style={[styles.filterDot, { backgroundColor: meta.color }]} />
+                <Text style={[styles.filterText, active && { color: meta.color }]}>
+                  {meta.label}
                 </Text>
-                <View style={[styles.filterCount, active && { backgroundColor: f.color }]}>
+                <View style={[styles.filterCount, active && { backgroundColor: meta.color }]}>
                   <Text style={[styles.filterCountText, active && { color: '#fff' }]}>
-                    {f.count}
+                    {counts[id]}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -176,7 +158,6 @@ export default function LeadsScreen() {
           })}
         </ScrollView>
 
-        {/* List head */}
         <View style={styles.listHead}>
           <Text style={styles.listTitle}>
             {filteredLeads.length} {filteredLeads.length === 1 ? 'lead' : 'leads'}
@@ -187,73 +168,33 @@ export default function LeadsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Leads list */}
-        {filteredLeads.map((l) => {
-          const s = statusStyle(l.status);
-          return (
-            <TouchableOpacity key={l.id} style={styles.leadCard} activeOpacity={0.9}>
-              <View style={styles.leadHead}>
-                <View style={[styles.leadAvatar, { backgroundColor: l.color }]}>
-                  <Text style={styles.leadAvatarText}>{l.initials}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.leadName}>{l.name}</Text>
-                  <View style={styles.leadMeta}>
-                    <MaterialCommunityIcons name="car" size={11} color={COLORS.gray} />
-                    <Text style={styles.leadMetaText}>{l.vehicle}</Text>
-                    <Text style={styles.leadMetaDot}>·</Text>
-                    <Text style={styles.leadMetaText}>{l.plate}</Text>
-                  </View>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: s.bg }]}>
-                  <Text style={[styles.statusText, { color: s.color }]}>{s.label}</Text>
-                </View>
-              </View>
+        {isLoading && (
+          <View style={styles.stateBox}>
+            <ActivityIndicator color={COLORS.primary} />
+            <Text style={styles.stateText}>Carregando leads...</Text>
+          </View>
+        )}
 
-              {/* Score bar */}
-              <View style={styles.scoreBlock}>
-                <View style={styles.scoreInfo}>
-                  <Text style={styles.scoreLabel}>Score de risco</Text>
-                  <Text style={[styles.scoreValue, { color: s.color }]}>{l.score}/100</Text>
-                </View>
-                <View style={styles.scoreBar}>
-                  <View
-                    style={[styles.scoreFill, { width: `${l.score}%`, backgroundColor: s.color }]}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.leadStats}>
-                <View style={styles.leadStat}>
-                  <MaterialCommunityIcons name="clock-outline" size={12} color={COLORS.gray} />
-                  <Text style={styles.leadStatText}>{l.lastVisit}</Text>
-                  <Text style={styles.leadStatSub}>sem visita</Text>
-                </View>
-                <View style={styles.leadStatSep} />
-                <View style={styles.leadStat}>
-                  <MaterialCommunityIcons name="star" size={12} color="#f5a623" />
-                  <Text style={styles.leadStatText}>NPS {l.nps}</Text>
-                </View>
-              </View>
-
-              <View style={styles.leadActions}>
-                <TouchableOpacity style={styles.actionPrimary} activeOpacity={0.85}>
-                  <MaterialCommunityIcons name="phone" size={16} color="#fff" />
-                  <Text style={styles.actionPrimaryText}>Ligar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionSecondary} activeOpacity={0.85}>
-                  <MaterialCommunityIcons name="message-text" size={16} color={COLORS.primary} />
-                  <Text style={styles.actionSecondaryText}>WhatsApp</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionIcon} activeOpacity={0.85}>
-                  <MaterialCommunityIcons name="account-details" size={18} color={COLORS.gray} />
-                </TouchableOpacity>
-              </View>
+        {error && !isLoading && (
+          <View style={styles.stateBox}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={36} color="#ea4335" />
+            <Text style={styles.stateTitle}>Falha ao carregar leads</Text>
+            <Text style={styles.stateText}>
+              {error instanceof ApiError
+                ? error.problem.detail || error.problem.title
+                : 'Tente novamente em instantes'}
+            </Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+              <Text style={styles.retryText}>Tentar novamente</Text>
             </TouchableOpacity>
-          );
-        })}
+          </View>
+        )}
 
-        {filteredLeads.length === 0 && (
+        {!isLoading && !error && filteredLeads.map((l) => (
+          <LeadCard key={l.id} lead={l} />
+        ))}
+
+        {!isLoading && !error && filteredLeads.length === 0 && (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="account-search-outline" size={48} color={COLORS.border} />
             <Text style={styles.emptyTitle}>Nenhum lead encontrado</Text>
@@ -267,10 +208,133 @@ export default function LeadsScreen() {
   );
 }
 
+function LeadCard({ lead }: { lead: Lead }) {
+  const uiStatus = API_TO_UI[lead.status];
+  const meta = STATUS_META[uiStatus];
+  const initials = initialsFromName(lead.customerName);
+  const color = avatarColor(lead.id);
+
+  const action = useCreateLeadAction(lead.id);
+
+  function triggerWhatsapp() {
+    action.mutate(
+      { channel: 'WHATSAPP', templateId: 'RETORNO_REVISAO_DESCONTO' },
+      {
+        onSuccess: (res) => {
+          Alert.alert('Mensagem registrada', `Ação ${res.actionId} enviada via WhatsApp`);
+        },
+        onError: (err) => {
+          const message =
+            err instanceof ApiError ? err.problem.detail || err.problem.title : 'Erro ao enviar';
+          Alert.alert('Falha', message);
+        },
+      }
+    );
+  }
+
+  function triggerCall() {
+    action.mutate(
+      { channel: 'CALL', templateId: 'LIGACAO_RETENCAO' },
+      {
+        onSuccess: (res) => {
+          Alert.alert('Ligação registrada', `Ação ${res.actionId} agendada`);
+        },
+        onError: (err) => {
+          const message =
+            err instanceof ApiError ? err.problem.detail || err.problem.title : 'Erro ao registrar';
+          Alert.alert('Falha', message);
+        },
+      }
+    );
+  }
+
+  return (
+    <TouchableOpacity style={styles.leadCard} activeOpacity={0.9}>
+      <View style={styles.leadHead}>
+        <View style={[styles.leadAvatar, { backgroundColor: color }]}>
+          <Text style={styles.leadAvatarText}>{initials}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.leadName}>{lead.customerName}</Text>
+          <View style={styles.leadMeta}>
+            <MaterialCommunityIcons name="car" size={11} color={COLORS.gray} />
+            <Text style={styles.leadMetaText}>{lead.vehicleModel}</Text>
+            <Text style={styles.leadMetaDot}>·</Text>
+            <Text style={styles.leadMetaText}>{lead.vehiclePlate}</Text>
+          </View>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
+          <Text style={[styles.statusText, { color: meta.color }]}>{meta.label}</Text>
+        </View>
+      </View>
+
+      <View style={styles.scoreBlock}>
+        <View style={styles.scoreInfo}>
+          <Text style={styles.scoreLabel}>Score de risco</Text>
+          <Text style={[styles.scoreValue, { color: meta.color }]}>{lead.riskScore}/100</Text>
+        </View>
+        <View style={styles.scoreBar}>
+          <View
+            style={[
+              styles.scoreFill,
+              { width: `${Math.min(100, Math.max(0, lead.riskScore))}%`, backgroundColor: meta.color },
+            ]}
+          />
+        </View>
+      </View>
+
+      <View style={styles.leadStats}>
+        <View style={styles.leadStat}>
+          <MaterialCommunityIcons name="clock-outline" size={12} color={COLORS.gray} />
+          <Text style={styles.leadStatText}>{formatLastVisit(lead.daysSinceLastVisit)}</Text>
+          <Text style={styles.leadStatSub}>sem visita</Text>
+        </View>
+        <View style={styles.leadStatSep} />
+        <View style={styles.leadStat}>
+          <MaterialCommunityIcons name="star" size={12} color="#f5a623" />
+          <Text style={styles.leadStatText}>
+            NPS {lead.lastNpsScore ?? '—'}
+          </Text>
+        </View>
+      </View>
+
+      {lead.recommendedAction && (
+        <View style={styles.suggestion}>
+          <MaterialCommunityIcons name="lightbulb-on-outline" size={13} color="#a36b00" />
+          <Text style={styles.suggestionText}>{lead.recommendedAction}</Text>
+        </View>
+      )}
+
+      <View style={styles.leadActions}>
+        <TouchableOpacity
+          style={[styles.actionPrimary, action.isPending && { opacity: 0.6 }]}
+          activeOpacity={0.85}
+          onPress={triggerCall}
+          disabled={action.isPending}
+        >
+          <MaterialCommunityIcons name="phone" size={16} color="#fff" />
+          <Text style={styles.actionPrimaryText}>Ligar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionSecondary, action.isPending && { opacity: 0.6 }]}
+          activeOpacity={0.85}
+          onPress={triggerWhatsapp}
+          disabled={action.isPending}
+        >
+          <MaterialCommunityIcons name="message-text" size={16} color={COLORS.primary} />
+          <Text style={styles.actionSecondaryText}>WhatsApp</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionIcon} activeOpacity={0.85}>
+          <MaterialCommunityIcons name="account-details" size={18} color={COLORS.gray} />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.primary },
 
-  /* Hero */
   hero: {
     backgroundColor: COLORS.primary,
     paddingTop: 50,
@@ -320,7 +384,6 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, color: COLORS.dark, padding: 0 },
 
-  /* Scroll */
   scrollArea: {
     flex: 1,
     backgroundColor: '#f5f5f7',
@@ -330,7 +393,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: { paddingTop: 18, paddingBottom: 30 },
 
-  /* Filters */
   filtersScroll: { marginBottom: 12 },
   filterChip: {
     flexDirection: 'row',
@@ -355,7 +417,6 @@ const styles = StyleSheet.create({
   },
   filterCountText: { fontSize: 10, fontWeight: '800', color: COLORS.gray },
 
-  /* List head */
   listHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -367,7 +428,6 @@ const styles = StyleSheet.create({
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sortText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
 
-  /* Lead Card */
   leadCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -398,7 +458,6 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   statusText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
 
-  /* Score */
   scoreBlock: { marginBottom: 12 },
   scoreInfo: {
     flexDirection: 'row',
@@ -416,7 +475,6 @@ const styles = StyleSheet.create({
   },
   scoreFill: { height: '100%', borderRadius: 3 },
 
-  /* Lead Stats */
   leadStats: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -430,7 +488,18 @@ const styles = StyleSheet.create({
   leadStatSub: { fontSize: 10, color: COLORS.gray, marginLeft: 1 },
   leadStatSep: { width: 1, height: 16, backgroundColor: '#e6e8eb' },
 
-  /* Actions */
+  suggestion: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: '#fff8e6',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  suggestionText: { flex: 1, fontSize: 11, color: '#8c5a00', fontWeight: '600', lineHeight: 15 },
+
   leadActions: { flexDirection: 'row', gap: 8 },
   actionPrimary: {
     flex: 1,
@@ -463,7 +532,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  /* Empty */
+  stateBox: { alignItems: 'center', paddingVertical: 30, paddingHorizontal: 20, gap: 8 },
+  stateTitle: { fontSize: 14, fontWeight: '800', color: COLORS.dark },
+  stateText: { fontSize: 12, color: COLORS.gray, textAlign: 'center' },
+  retryBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  retryText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+
   emptyState: {
     alignItems: 'center',
     paddingVertical: 40,
