@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { COLORS } from '../../constants';
 import { useAuthStore } from '../../utils/store';
 import FordLogo from '../../components/FordLogo';
+import { authService } from '../../services/auth.service';
 
 const { width } = Dimensions.get('window');
 
@@ -110,7 +111,8 @@ export default function DashboardScreen() {
   const logout = useAuthStore((state) => state.logout);
   const [period, setPeriod] = useState('7d');
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout();
     logout();
     router.replace('/');
   };

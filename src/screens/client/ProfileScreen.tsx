@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
 import { useAuthStore, getMockUser } from '../../utils/store';
+import { authService } from '../../services/auth.service';
 
 export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
@@ -29,7 +30,8 @@ export default function ProfileScreen() {
     .map((n) => n[0])
     .join('') ?? 'JS';
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout();
     logout();
     router.replace('/');
   };

@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { useAuthStore, getMockUser } from '../../utils/store';
 import { COLORS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
+import { authService } from '../../services/auth.service';
 
 const { width } = Dimensions.get('window');
 
@@ -28,7 +29,8 @@ export default function HomeScreen() {
   const warrantyDaysLeft = 245;
   const warrantyPct = Math.min(100, (warrantyDaysLeft / 365) * 100);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout();
     logout();
     router.replace('/');
   };
