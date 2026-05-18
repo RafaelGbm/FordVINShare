@@ -12,23 +12,38 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
-import { useAuthStore, getMockUser } from '../../utils/store';
+import { useAuthStore } from '../../utils/store';
 import { authService } from '../../services/auth.service';
+import { useMe } from '../../hooks/useAuth';
+import { useMyVehicles } from '../../hooks/useVehicles';
+import { WarrantyStatus } from '../../services/vehicles.service';
+
+function warrantyMeta(status: WarrantyStatus) {
+  switch (status) {
+    case 'ACTIVE':
+      return { label: 'Garantia ativa', color: COLORS.success };
+    case 'EXPIRING_SOON':
+      return { label: 'Garantia vencendo', color: '#f5a623' };
+    case 'EXPIRED':
+      return { label: 'Garantia vencida', color: '#ea4335' };
+  }
+}
 
 export default function ProfileScreen() {
-  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const [mockData] = useState(() => getMockUser('client1'));
+  const { data: me } = useMe();
+  const { data: vehicles } = useMyVehicles();
   const [notifPush, setNotifPush] = useState(true);
   const [notifEmail, setNotifEmail] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
-  const vehicle = mockData.vehicle;
-  const initials = user?.name
-    ?.split(' ')
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join('') ?? 'JS';
+  const primaryVehicle = vehicles?.[0];
+  const initials =
+    me?.name
+      ?.split(' ')
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join('') ?? '—';
 
   const handleLogout = async () => {
     await authService.logout();
@@ -60,10 +75,12 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="check-decagram" size={18} color={COLORS.primary} />
             </View>
           </View>
-          <Text style={styles.profileName}>{user?.name || 'João Silva'}</Text>
+          <Text style={styles.profileName}>{me?.name ?? '—'}</Text>
           <View style={styles.profileTier}>
             <MaterialCommunityIcons name="medal" size={12} color="#ffc966" />
-            <Text style={styles.profileTierText}>Ford Gold · Cliente desde 2022</Text>
+            <Text style={styles.profileTierText}>
+              Ford Gold{me?.createdAt && ` · Cliente desde ${new Date(me.createdAt).getFullYear()}`}
+            </Text>
           </View>
 
           <View style={styles.profileStats}>
@@ -93,43 +110,55 @@ export default function ProfileScreen() {
         {/* Personal data */}
         <SectionTitle>Dados pessoais</SectionTitle>
         <View style={styles.card}>
-          <InfoRow icon="email-outline" label="Email" value={user?.email || 'joao@email.com'} />
+          <InfoRow icon="email-outline" label="Email" value={me?.email ?? '—'} />
           <Divider />
-          <InfoRow icon="phone-outline" label="Telefone" value={user?.phone || '(11) 98765-4321'} />
-          <Divider />
-          <InfoRow icon="card-account-details-outline" label="CPF" value={user?.cpf || '***.456.789-**'} />
+          <InfoRow icon="phone-outline" label="Telefone" value={me?.phone ?? '—'} />
           <Divider />
           <InfoRow
             icon="map-marker-outline"
             label="Endereço"
-            value="Av. Paulista, 1500 · SP"
+            value="Cadastre seu endereço"
             action
           />
         </View>
 
         {/* My Vehicle */}
         <SectionTitle>Meus veículos</SectionTitle>
-        <TouchableOpacity style={styles.vehicleCard} activeOpacity={0.85}>
-          <View style={styles.vehicleIconBg}>
-            <MaterialCommunityIcons name="car-sports" size={28} color={COLORS.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={styles.vehicleTop}>
-              <Text style={styles.vehicleName}>Ford {vehicle.model}</Text>
-              <View style={styles.vehicleDefault}>
-                <Text style={styles.vehicleDefaultText}>PRINCIPAL</Text>
+        {(vehicles ?? []).map((v, idx) => {
+          const statusMeta = warrantyMeta(v.warrantyStatus);
+          return (
+            <TouchableOpacity key={v.id} style={styles.vehicleCard} activeOpacity={0.85}>
+              <View style={styles.vehicleIconBg}>
+                <MaterialCommunityIcons name="car-sports" size={28} color={COLORS.primary} />
               </View>
-            </View>
-            <Text style={styles.vehicleInfo}>
-              {vehicle.year} · {(vehicle.km / 1000).toFixed(0)}k km · ABC-1D23
-            </Text>
-            <View style={styles.vehicleStatus}>
-              <View style={styles.statusDotG} />
-              <Text style={styles.vehicleStatusText}>Garantia ativa</Text>
-            </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.vehicleTop}>
+                  <Text style={styles.vehicleName}>Ford {v.model}</Text>
+                  {idx === 0 && (
+                    <View style={styles.vehicleDefault}>
+                      <Text style={styles.vehicleDefaultText}>PRINCIPAL</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.vehicleInfo}>
+                  {v.year} · {(v.currentKm / 1000).toFixed(0)}k km · {v.plate}
+                </Text>
+                <View style={styles.vehicleStatus}>
+                  <View style={[styles.statusDotG, { backgroundColor: statusMeta.color }]} />
+                  <Text style={[styles.vehicleStatusText, { color: statusMeta.color }]}>
+                    {statusMeta.label}
+                  </Text>
+                </View>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={COLORS.gray} />
+            </TouchableOpacity>
+          );
+        })}
+        {!primaryVehicle && (
+          <View style={[styles.vehicleCard, { justifyContent: 'center' }]}>
+            <Text style={styles.rowSub}>Nenhum veículo cadastrado</Text>
           </View>
-          <MaterialCommunityIcons name="chevron-right" size={22} color={COLORS.gray} />
-        </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.addVehicleBtn} activeOpacity={0.85}>
           <MaterialCommunityIcons name="plus" size={18} color={COLORS.primary} />
