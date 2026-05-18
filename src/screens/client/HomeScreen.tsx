@@ -94,7 +94,7 @@ export default function HomeScreen() {
         <View style={styles.heroBlob2} />
         <View style={styles.heroTop}>
           <FordLogo width={110} height={44} />
-          <TouchableOpacity onPress={handleLogout} style={styles.iconBtn}>
+          <TouchableOpacity style={styles.iconBtn}>
             <MaterialCommunityIcons name="bell-outline" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
