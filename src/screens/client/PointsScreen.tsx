@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,77 +7,113 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
+import {
+  useLoyaltyBalance,
+  useLoyaltyRewards,
+  useLoyaltyTransactions,
+  useRedeemReward,
+} from '../../hooks/useLoyalty';
+import { ApiError } from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
 const CATEGORIES = [
   { id: 'all', label: 'Todos' },
-  { id: 'service', label: 'Serviços' },
-  { id: 'parts', label: 'Peças' },
-  { id: 'lifestyle', label: 'Lifestyle' },
+  { id: 'SERVICE', label: 'Serviços' },
+  { id: 'PARTS', label: 'Peças' },
+  { id: 'LIFESTYLE', label: 'Lifestyle' },
 ];
 
-const REWARDS = [
-  {
-    id: 'r1',
-    name: 'Revisão Premium',
-    desc: 'Inclui troca de óleo + filtros',
-    points: 2000,
-    icon: 'wrench',
-    bg: '#e8efff',
-    color: COLORS.primary,
-    tag: 'POPULAR',
-  },
-  {
-    id: 'r2',
-    name: '20% off Acessórios',
-    desc: 'Cupom para loja oficial',
-    points: 800,
-    icon: 'tag-heart',
-    bg: '#fdf0e6',
-    color: '#ff7043',
-    tag: null,
-  },
-  {
-    id: 'r3',
-    name: 'Lavagem Detalhada',
-    desc: 'Externa + interna + cera',
-    points: 500,
-    icon: 'car-wash',
-    bg: '#e9f7ee',
-    color: '#1e8e3e',
-    tag: 'NOVO',
-  },
-  {
-    id: 'r4',
-    name: 'Boné Ford Original',
-    desc: 'Edição limitada Mustang',
-    points: 1200,
-    icon: 'tshirt-crew',
-    bg: '#fce4ec',
-    color: '#e91e63',
-    tag: null,
-  },
-];
+const REWARD_BG_BY_CATEGORY: Record<string, { bg: string; color: string }> = {
+  SERVICE: { bg: '#e8efff', color: COLORS.primary },
+  PARTS: { bg: '#fdf0e6', color: '#ff7043' },
+  LIFESTYLE: { bg: '#fce4ec', color: '#e91e63' },
+  DEFAULT: { bg: '#e9f7ee', color: '#1e8e3e' },
+};
 
-const HISTORY = [
-  { id: 'h1', type: 'earn', label: 'Revisão Preventiva', date: '15 Mar', points: 350 },
-  { id: 'h2', type: 'earn', label: 'Indicação - Carlos M.', date: '10 Mar', points: 200 },
-  { id: 'h3', type: 'spend', label: 'Resgate: 10% off peças', date: '02 Mar', points: -400 },
-  { id: 'h4', type: 'earn', label: 'Troca de óleo', date: '22 Fev', points: 150 },
-];
+function tierFor(balance: number) {
+  if (balance >= 5000) return { name: 'Ford Platinum', next: balance, nextLabel: '' };
+  if (balance >= 2000) return { name: 'Ford Gold', next: 5000, nextLabel: 'Platinum' };
+  if (balance >= 500) return { name: 'Ford Silver', next: 2000, nextLabel: 'Gold' };
+  return { name: 'Ford Bronze', next: 500, nextLabel: 'Silver' };
+}
+
+function formatShortDate(iso: string) {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
 
 export default function PointsScreen() {
   const [cat, setCat] = useState('all');
-  const balance = 2450;
-  const tier = 'Ford Gold';
-  const nextTierAt = 5000;
-  const tierPct = (balance / nextTierAt) * 100;
+
+  const balanceQuery = useLoyaltyBalance();
+  const rewardsQuery = useLoyaltyRewards();
+  const transactionsQuery = useLoyaltyTransactions(0, 10);
+  const redeemMutation = useRedeemReward();
+
+  const balance = balanceQuery.data?.balance ?? 0;
+  const expiringIn30Days = balanceQuery.data?.expiringIn30Days ?? 0;
+  const tier = useMemo(() => tierFor(balance), [balance]);
+  const tierPct = tier.next > 0 ? Math.min(100, (balance / tier.next) * 100) : 100;
+
+  const transactions = transactionsQuery.data?.content ?? [];
+  const monthEarnings = useMemo(() => {
+    const now = new Date();
+    return transactions
+      .filter(
+        (t) =>
+          t.type === 'EARN' &&
+          new Date(t.createdAt).getMonth() === now.getMonth() &&
+          new Date(t.createdAt).getFullYear() === now.getFullYear()
+      )
+      .reduce((acc, t) => acc + t.points, 0);
+  }, [transactions]);
+
+  const totalRedemptions = useMemo(
+    () => transactions.filter((t) => t.type === 'SPEND').length,
+    [transactions]
+  );
+
+  const rewards = useMemo(() => {
+    const list = rewardsQuery.data ?? [];
+    if (cat === 'all') return list;
+    return list.filter((r) => r.category === cat);
+  }, [rewardsQuery.data, cat]);
+
+  const handleRedeem = (rewardId: string, rewardName: string, cost: number) => {
+    if (balance < cost) return;
+    Alert.alert(
+      'Confirmar resgate',
+      `Você vai resgatar "${rewardName}" por ${cost.toLocaleString('pt-BR')} pts.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Resgatar',
+          onPress: async () => {
+            try {
+              const result = await redeemMutation.mutateAsync(rewardId);
+              Alert.alert(
+                'Resgate confirmado!',
+                `Código: ${result.voucherCode}\nVálido até ${new Date(result.expiresAt).toLocaleDateString('pt-BR')}.`
+              );
+            } catch (e) {
+              const message =
+                e instanceof ApiError
+                  ? e.problem.detail || e.problem.title
+                  : 'Não foi possível concluir o resgate.';
+              Alert.alert('Erro', message);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <View style={styles.root}>
@@ -104,8 +140,14 @@ export default function PointsScreen() {
             <View>
               <Text style={styles.pointsLabel}>Saldo disponível</Text>
               <View style={styles.pointsValueRow}>
-                <Text style={styles.pointsValue}>{balance.toLocaleString('pt-BR')}</Text>
-                <Text style={styles.pointsUnit}>pts</Text>
+                {balanceQuery.isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.pointsValue}>{balance.toLocaleString('pt-BR')}</Text>
+                    <Text style={styles.pointsUnit}>pts</Text>
+                  </>
+                )}
               </View>
             </View>
             <FordLogo width={70} height={28} style={{ opacity: 0.9 }} />
@@ -114,11 +156,15 @@ export default function PointsScreen() {
           <View style={styles.tierRow}>
             <View style={styles.tierBadge}>
               <MaterialCommunityIcons name="medal" size={14} color="#f5a623" />
-              <Text style={styles.tierText}>{tier}</Text>
+              <Text style={styles.tierText}>{tier.name}</Text>
             </View>
-            <Text style={styles.tierGoal}>
-              Faltam {(nextTierAt - balance).toLocaleString('pt-BR')} pra Platinum
-            </Text>
+            {tier.nextLabel ? (
+              <Text style={styles.tierGoal}>
+                Faltam {(tier.next - balance).toLocaleString('pt-BR')} pra {tier.nextLabel}
+              </Text>
+            ) : (
+              <Text style={styles.tierGoal}>Nível máximo atingido</Text>
+            )}
           </View>
 
           <View style={styles.tierBar}>
@@ -136,32 +182,39 @@ export default function PointsScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <MaterialCommunityIcons name="trending-up" size={20} color={COLORS.success} />
-            <Text style={styles.statValue}>+750</Text>
+            <Text style={styles.statValue}>
+              {monthEarnings > 0 ? `+${monthEarnings.toLocaleString('pt-BR')}` : '–'}
+            </Text>
             <Text style={styles.statLabel}>este mês</Text>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="account-multiple" size={20} color={COLORS.primary} />
-            <Text style={styles.statValue}>3</Text>
-            <Text style={styles.statLabel}>indicações</Text>
+            <MaterialCommunityIcons name="gift-outline" size={20} color="#ff7043" />
+            <Text style={styles.statValue}>{totalRedemptions}</Text>
+            <Text style={styles.statLabel}>resgates</Text>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="gift-outline" size={20} color="#ff7043" />
-            <Text style={styles.statValue}>2</Text>
-            <Text style={styles.statLabel}>resgates</Text>
+            <MaterialCommunityIcons name="clock-alert-outline" size={20} color="#f5a623" />
+            <Text style={styles.statValue}>
+              {expiringIn30Days > 0 ? expiringIn30Days.toLocaleString('pt-BR') : '–'}
+            </Text>
+            <Text style={styles.statLabel}>vencem em 30d</Text>
           </View>
         </View>
 
-        {/* How to earn */}
-        <View style={styles.earnBox}>
-          <View style={styles.earnIcon}>
-            <MaterialCommunityIcons name="lightning-bolt" size={20} color="#f5a623" />
+        {/* Expiring warning */}
+        {expiringIn30Days > 0 && (
+          <View style={styles.earnBox}>
+            <View style={styles.earnIcon}>
+              <MaterialCommunityIcons name="clock-alert" size={20} color="#f5a623" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.earnTitle}>Pontos próximos do vencimento</Text>
+              <Text style={styles.earnText}>
+                {expiringIn30Days.toLocaleString('pt-BR')} pts vencem nos próximos 30 dias
+              </Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.earnTitle}>Ganhe pontos turbinado</Text>
-            <Text style={styles.earnText}>Indique 3 amigos este mês e ganhe 500 pts bônus</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.gray} />
-        </View>
+        )}
 
         {/* Rewards */}
         <View style={styles.sectionHead}>
@@ -192,39 +245,51 @@ export default function PointsScreen() {
           })}
         </ScrollView>
 
+        {rewardsQuery.isLoading && (
+          <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+            <ActivityIndicator color={COLORS.primary} />
+          </View>
+        )}
+
+        {!rewardsQuery.isLoading && rewards.length === 0 && (
+          <View style={{ paddingHorizontal: 20 }}>
+            <Text style={{ color: COLORS.gray, fontSize: 13 }}>
+              Nenhuma recompensa disponível nesta categoria.
+            </Text>
+          </View>
+        )}
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
         >
-          {REWARDS.map((r) => {
-            const canRedeem = balance >= r.points;
+          {rewards.map((r) => {
+            const canRedeem = balance >= r.pointsCost;
+            const style = REWARD_BG_BY_CATEGORY[r.category ?? 'DEFAULT'] ?? REWARD_BG_BY_CATEGORY.DEFAULT;
             return (
               <TouchableOpacity
                 key={r.id}
                 style={styles.rewardCard}
                 activeOpacity={0.9}
+                onPress={() => canRedeem && handleRedeem(r.id, r.name, r.pointsCost)}
+                disabled={!canRedeem || redeemMutation.isPending}
               >
-                <View style={[styles.rewardImg, { backgroundColor: r.bg }]}>
-                  <MaterialCommunityIcons name={r.icon as any} size={48} color={r.color} />
-                  {r.tag && (
-                    <View style={[styles.rewardTag, { backgroundColor: r.color }]}>
-                      <Text style={styles.rewardTagText}>{r.tag}</Text>
-                    </View>
-                  )}
+                <View style={[styles.rewardImg, { backgroundColor: style.bg }]}>
+                  <MaterialCommunityIcons name="gift" size={48} color={style.color} />
                 </View>
                 <View style={styles.rewardBody}>
                   <Text style={styles.rewardName} numberOfLines={1}>
                     {r.name}
                   </Text>
                   <Text style={styles.rewardDesc} numberOfLines={2}>
-                    {r.desc}
+                    {r.description}
                   </Text>
                   <View style={styles.rewardFoot}>
                     <View style={styles.rewardPoints}>
                       <MaterialCommunityIcons name="circle" size={6} color="#f5a623" />
                       <Text style={styles.rewardPointsText}>
-                        {r.points.toLocaleString('pt-BR')} pts
+                        {r.pointsCost.toLocaleString('pt-BR')} pts
                       </Text>
                     </View>
                     <View style={[styles.rewardBtn, !canRedeem && styles.rewardBtnDisabled]}>
@@ -248,32 +313,52 @@ export default function PointsScreen() {
         </View>
 
         <View style={styles.historyCard}>
-          {HISTORY.map((h, i) => (
-            <View key={h.id} style={[styles.historyRow, i === HISTORY.length - 1 && { borderBottomWidth: 0 }]}>
+          {transactionsQuery.isLoading && (
+            <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+              <ActivityIndicator color={COLORS.primary} size="small" />
+            </View>
+          )}
+
+          {!transactionsQuery.isLoading && transactions.length === 0 && (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <Text style={{ color: COLORS.gray, fontSize: 13 }}>
+                Nenhuma transação ainda.
+              </Text>
+            </View>
+          )}
+
+          {transactions.map((h, i) => (
+            <View
+              key={h.id}
+              style={[
+                styles.historyRow,
+                i === transactions.length - 1 && { borderBottomWidth: 0 },
+              ]}
+            >
               <View
                 style={[
                   styles.historyIcon,
-                  { backgroundColor: h.type === 'earn' ? '#e9f7ee' : '#fce8e6' },
+                  { backgroundColor: h.type === 'EARN' ? '#e9f7ee' : '#fce8e6' },
                 ]}
               >
                 <MaterialCommunityIcons
-                  name={h.type === 'earn' ? 'arrow-up' : 'arrow-down'}
+                  name={h.type === 'EARN' ? 'arrow-up' : 'arrow-down'}
                   size={16}
-                  color={h.type === 'earn' ? COLORS.success : '#ea4335'}
+                  color={h.type === 'EARN' ? COLORS.success : '#ea4335'}
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.historyLabel}>{h.label}</Text>
-                <Text style={styles.historyDate}>{h.date}</Text>
+                <Text style={styles.historyDate}>{formatShortDate(h.createdAt)}</Text>
               </View>
               <Text
                 style={[
                   styles.historyPoints,
-                  { color: h.type === 'earn' ? COLORS.success : '#ea4335' },
+                  { color: h.type === 'EARN' ? COLORS.success : '#ea4335' },
                 ]}
               >
                 {h.points > 0 ? '+' : ''}
-                {h.points} pts
+                {h.points.toLocaleString('pt-BR')} pts
               </Text>
             </View>
           ))}
