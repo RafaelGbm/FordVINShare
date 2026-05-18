@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,105 +9,118 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { COLORS } from '../../constants';
-
-type Message = {
-  id: string;
-  role: 'user' | 'ai';
-  text: string;
-  time: string;
-};
+import {
+  chatKeys,
+  useChatHistory,
+  useCreateChatSession,
+  useSendChatMessage,
+} from '../../hooks/useChat';
+import {
+  ChatMessage,
+  SuggestedAction,
+  SuggestedActionType,
+} from '../../services/chat.service';
+import { ApiError } from '../../services/api';
 
 const SUGGESTIONS = [
   { id: 's1', icon: 'calendar', label: 'Agendar revisão' },
   { id: 's2', icon: 'shield-check', label: 'Status da garantia' },
   { id: 's3', icon: 'cog-outline', label: 'Próxima manutenção' },
   { id: 's4', icon: 'gift-outline', label: 'Saldo de pontos' },
-  { id: 's5', icon: 'wrench', label: 'Onde fica o filtro de ar?' },
 ];
 
-const now = () => {
-  const d = new Date();
+const DEEP_LINK_MAP: Record<SuggestedActionType, string> = {
+  OPEN_SCHEDULING: '/(client)/scheduling',
+  OPEN_LOCATOR: '/(client)/locator',
+  OPEN_POINTS: '/(client)/points',
+  OPEN_PROFILE: '/(client)/profile',
+  OPEN_VEHICLE: '/(client)/home',
+};
+
+function formatTime(iso: string) {
+  const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-};
+}
 
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: 'm1',
-    role: 'ai',
-    text: 'Olá, João! Sou a Ford AI, sua assistente virtual. Posso te ajudar com agendamentos, garantia, pontos, dúvidas técnicas do seu Fiesta 2022 e muito mais. 🚗',
-    time: '10:32',
-  },
-  {
-    id: 'm2',
-    role: 'ai',
-    text: 'Como posso te ajudar hoje?',
-    time: '10:32',
-  },
-];
-
-const MOCK_REPLIES: Record<string, string> = {
-  default:
-    'Entendido! Estou processando sua solicitação. Em alguns instantes vou trazer a resposta mais precisa baseada no histórico do seu Fiesta 2022.',
-  agendar:
-    'Posso te ajudar com o agendamento! Sua próxima revisão gratuita está disponível. Quer que eu sugira datas e concessionárias próximas? 📅',
-  garantia:
-    'Sua garantia Ford Plus está ATIVA e válida até 12/01/2027 — faltam 245 dias. Ela cobre revisões programadas, motor e transmissão. 🛡️',
-  manutenção:
-    'Sua próxima revisão é em ~600 km (40.000 km). Inclui troca de óleo, filtros e inspeção dos itens de segurança. Custo estimado: GRATUITO pela garantia. 🔧',
-  pontos:
-    'Você tem 2.450 pontos disponíveis no Ford Gold. Faltam 2.550 pontos para Platinum. Quer ver as recompensas que pode resgatar agora? 🎁',
-  filtro:
-    'O filtro de ar do Fiesta 2022 fica na parte superior do motor, em uma caixa preta retangular do lado do passageiro. Recomendo trocar a cada 15.000 km. 🛠️',
-};
-
-function generateReply(userText: string): string {
-  const t = userText.toLowerCase();
-  if (t.includes('agendar') || t.includes('revisão') || t.includes('marcar')) return MOCK_REPLIES.agendar;
-  if (t.includes('garantia')) return MOCK_REPLIES.garantia;
-  if (t.includes('manutenção') || t.includes('próxima')) return MOCK_REPLIES.manutenção;
-  if (t.includes('ponto')) return MOCK_REPLIES.pontos;
-  if (t.includes('filtro') || t.includes('ar')) return MOCK_REPLIES.filtro;
-  return MOCK_REPLIES.default;
+function handleSuggestedAction(action: SuggestedAction) {
+  const path = DEEP_LINK_MAP[action.type];
+  if (!path) return;
+  router.push(path as any);
 }
 
 export default function ChatScreen() {
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
-  const [input, setInput] = useState('');
-  const [typing, setTyping] = useState(false);
+  const qc = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
+  const [input, setInput] = useState('');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
 
-  const handleSend = (text?: string) => {
+  const createSession = useCreateChatSession();
+  const historyQuery = useChatHistory(sessionId ?? undefined);
+  const sendMutation = useSendChatMessage(sessionId ?? undefined);
+
+  const messages = historyQuery.data ?? [];
+
+  useEffect(() => {
+    if (sessionId || createSession.isPending) return;
+    createSession.mutate(undefined, {
+      onSuccess: (s) => setSessionId(s.sessionId),
+      onError: (e) => {
+        const message =
+          e instanceof ApiError ? e.problem.detail || e.problem.title : 'Falha ao abrir sessão.';
+        setBootstrapError(message);
+      },
+    });
+  }, [sessionId, createSession]);
+
+  const handleSend = async (text?: string) => {
     const value = (text ?? input).trim();
-    if (!value) return;
+    if (!value || !sessionId || sendMutation.isPending) return;
 
-    const userMsg: Message = {
-      id: `m${Date.now()}`,
+    const userMsg: ChatMessage = {
+      id: `local-${Date.now()}`,
       role: 'user',
-      text: value,
-      time: now(),
+      content: value,
+      createdAt: new Date().toISOString(),
     };
-    setMessages((m) => [...m, userMsg]);
+    qc.setQueryData<ChatMessage[]>(chatKeys.history(sessionId), (old) =>
+      old ? [...old, userMsg] : [userMsg]
+    );
     setInput('');
-    setTyping(true);
-
-    setTimeout(() => {
-      const aiMsg: Message = {
-        id: `m${Date.now() + 1}`,
-        role: 'ai',
-        text: generateReply(value),
-        time: now(),
-      };
-      setMessages((m) => [...m, aiMsg]);
-      setTyping(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
-    }, 1100);
-
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+
+    try {
+      await sendMutation.mutateAsync(value);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    } catch (e) {
+      const message =
+        e instanceof ApiError
+          ? e.problem.status === 429
+            ? 'Muitas mensagens em pouco tempo. Aguarde um instante.'
+            : e.problem.detail || e.problem.title
+          : 'Não foi possível enviar a mensagem.';
+      // Append an error bubble so the user sees feedback.
+      qc.setQueryData<ChatMessage[]>(chatKeys.history(sessionId), (old) => [
+        ...(old ?? []),
+        {
+          id: `err-${Date.now()}`,
+          role: 'assistant',
+          content: `⚠️ ${message}`,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+    }
   };
+
+  const typing = sendMutation.isPending;
+  const showSuggestions = !typing && messages.length <= 1;
 
   return (
     <KeyboardAvoidingView
@@ -153,33 +166,75 @@ export default function ChatScreen() {
           <Text style={styles.dateBadgeText}>HOJE</Text>
         </View>
 
+        {bootstrapError && (
+          <View
+            style={[
+              styles.bubble,
+              styles.bubbleAi,
+              { alignSelf: 'center', backgroundColor: '#fce8e6' },
+            ]}
+          >
+            <Text style={[styles.bubbleText, { color: '#c62828' }]}>{bootstrapError}</Text>
+          </View>
+        )}
+
+        {!sessionId && !bootstrapError && (
+          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+            <ActivityIndicator color={COLORS.primary} />
+            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 8 }}>
+              Iniciando conversa...
+            </Text>
+          </View>
+        )}
+
         {messages.map((m, i) => {
           const isUser = m.role === 'user';
           const prevSameRole = i > 0 && messages[i - 1].role === m.role;
           return (
-            <View
-              key={m.id}
-              style={[
-                styles.msgRow,
-                isUser ? styles.msgRowUser : styles.msgRowAi,
-                prevSameRole && { marginTop: 4 },
-              ]}
-            >
-              {!isUser && !prevSameRole && (
-                <View style={styles.msgAvatar}>
-                  <MaterialCommunityIcons name="robot-happy" size={14} color="#fff" />
+            <View key={m.id}>
+              <View
+                style={[
+                  styles.msgRow,
+                  isUser ? styles.msgRowUser : styles.msgRowAi,
+                  prevSameRole && { marginTop: 4 },
+                ]}
+              >
+                {!isUser && !prevSameRole && (
+                  <View style={styles.msgAvatar}>
+                    <MaterialCommunityIcons name="robot-happy" size={14} color="#fff" />
+                  </View>
+                )}
+                {!isUser && prevSameRole && <View style={{ width: 30 }} />}
+
+                <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAi]}>
+                  <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>
+                    {m.content}
+                  </Text>
+                  <Text style={[styles.bubbleTime, isUser && styles.bubbleTimeUser]}>
+                    {formatTime(m.createdAt)}
+                  </Text>
+                </View>
+              </View>
+
+              {!isUser && m.suggestedActions && m.suggestedActions.length > 0 && (
+                <View style={styles.actionsRow}>
+                  {m.suggestedActions.map((a, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={styles.actionChip}
+                      onPress={() => handleSuggestedAction(a)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.actionChipText}>{a.label}</Text>
+                      <MaterialCommunityIcons
+                        name="arrow-right"
+                        size={12}
+                        color={COLORS.primary}
+                      />
+                    </TouchableOpacity>
+                  ))}
                 </View>
               )}
-              {!isUser && prevSameRole && <View style={{ width: 30 }} />}
-
-              <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAi]}>
-                <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>
-                  {m.text}
-                </Text>
-                <Text style={[styles.bubbleTime, isUser && styles.bubbleTimeUser]}>
-                  {m.time}
-                </Text>
-              </View>
             </View>
           );
         })}
@@ -197,8 +252,8 @@ export default function ChatScreen() {
           </View>
         )}
 
-        {/* Quick suggestions (only when empty conversation) */}
-        {messages.length <= 2 && (
+        {/* Quick suggestions (only when conversation hasn't really started) */}
+        {showSuggestions && sessionId && (
           <View style={styles.suggestionsBlock}>
             <Text style={styles.suggestionsLabel}>Sugestões para você</Text>
             <View style={styles.suggestionsList}>
@@ -228,7 +283,7 @@ export default function ChatScreen() {
         <View style={styles.inputWrap}>
           <TextInput
             style={styles.input}
-            placeholder="Pergunte algo à Ford AI..."
+            placeholder={sessionId ? 'Pergunte algo à Ford AI...' : 'Aguarde a conversa abrir...'}
             placeholderTextColor={COLORS.gray}
             value={input}
             onChangeText={setInput}
@@ -236,22 +291,30 @@ export default function ChatScreen() {
             returnKeyType="send"
             multiline
             maxLength={500}
+            editable={!!sessionId && !sendMutation.isPending}
           />
           <TouchableOpacity style={styles.micBtn}>
             <MaterialCommunityIcons name="microphone-outline" size={20} color={COLORS.gray} />
           </TouchableOpacity>
         </View>
         <TouchableOpacity
-          style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
+          style={[
+            styles.sendBtn,
+            (!input.trim() || !sessionId || sendMutation.isPending) && styles.sendBtnDisabled,
+          ]}
           onPress={() => handleSend()}
-          disabled={!input.trim()}
+          disabled={!input.trim() || !sessionId || sendMutation.isPending}
           activeOpacity={0.85}
         >
-          <MaterialCommunityIcons
-            name="send"
-            size={20}
-            color={input.trim() ? '#fff' : COLORS.gray}
-          />
+          {sendMutation.isPending ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <MaterialCommunityIcons
+              name="send"
+              size={20}
+              color={input.trim() && sessionId ? '#fff' : COLORS.gray}
+            />
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -398,6 +461,28 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gray,
     opacity: 0.6,
   },
+
+  /* Suggested actions (deep links from assistant replies) */
+  actionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginLeft: 36,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  actionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  actionChipText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
 
   /* Suggestions */
   suggestionsBlock: { marginTop: 12, marginBottom: 6 },
