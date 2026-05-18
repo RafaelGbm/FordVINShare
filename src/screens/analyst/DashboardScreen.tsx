@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -15,101 +16,97 @@ import { COLORS } from '../../constants';
 import { useAuthStore } from '../../utils/store';
 import FordLogo from '../../components/FordLogo';
 import { authService } from '../../services/auth.service';
+import {
+  useKpis,
+  useVinShareSeries,
+  useVinShareByDealership,
+} from '../../hooks/useAnalytics';
+import { AnalyticsPeriod, KpisWithDelta } from '../../services/analytics.service';
 
 const { width } = Dimensions.get('window');
 
-const PERIODS = [
+const PERIODS: { id: AnalyticsPeriod; label: string }[] = [
   { id: '7d', label: '7d' },
   { id: '30d', label: '30d' },
   { id: '90d', label: '90d' },
   { id: 'year', label: 'Ano' },
 ];
 
-const KPIS = [
-  {
-    id: 'k1',
-    label: 'Veículos em garantia',
-    value: '428',
-    delta: '+12',
-    deltaPositive: true,
-    icon: 'shield-car',
-    color: COLORS.primary,
-    bg: '#e8efff',
-  },
-  {
-    id: 'k2',
-    label: 'Taxa VIN Share',
-    value: '68%',
-    delta: '+4.2%',
-    deltaPositive: true,
-    icon: 'chart-donut',
-    color: '#1e8e3e',
-    bg: '#e9f7ee',
-  },
-  {
-    id: 'k3',
-    label: 'Receita estimada',
-    value: 'R$ 142k',
-    delta: '-2.1%',
-    deltaPositive: false,
-    icon: 'cash-multiple',
-    color: '#f5a623',
-    bg: '#fff4e0',
-  },
-  {
-    id: 'k4',
-    label: 'Leads ativos',
-    value: '87',
-    delta: '+8',
-    deltaPositive: true,
-    icon: 'account-multiple-plus',
-    color: '#9c27b0',
-    bg: '#f3e5f5',
-  },
-];
+type KpiCard = {
+  id: string;
+  label: string;
+  value: string;
+  delta?: number;
+  deltaSuffix?: string;
+  invertDelta?: boolean; // for "leadsAtRisk" higher is bad
+  icon: string;
+  color: string;
+  bg: string;
+};
 
-const CHART_DATA = [
-  { label: 'Seg', value: 0.55 },
-  { label: 'Ter', value: 0.62 },
-  { label: 'Qua', value: 0.48 },
-  { label: 'Qui', value: 0.72 },
-  { label: 'Sex', value: 0.85 },
-  { label: 'Sáb', value: 0.78 },
-  { label: 'Dom', value: 0.42 },
-];
+function formatCurrency(v: number) {
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1000) return `R$ ${(v / 1000).toFixed(0)}k`;
+  return `R$ ${v.toFixed(0)}`;
+}
 
-const TOP_DEALERS = [
-  { id: 'd1', name: 'Ford SP Centro', share: '74%', revenue: 'R$ 48k', trend: 'up' },
-  { id: 'd2', name: 'Ford Tatuapé', share: '68%', revenue: 'R$ 38k', trend: 'up' },
-  { id: 'd3', name: 'Ford Morumbi', share: '62%', revenue: 'R$ 32k', trend: 'down' },
-  { id: 'd4', name: 'Ford Pinheiros', share: '54%', revenue: 'R$ 24k', trend: 'up' },
-];
-
-const INSIGHTS = [
-  {
-    id: 'i1',
-    type: 'risk',
-    title: '23 clientes em risco',
-    desc: 'Garantia vencendo em 60 dias sem contato',
-    icon: 'alert-circle',
-    color: '#ea4335',
-    bg: '#fce8e6',
-  },
-  {
-    id: 'i2',
-    type: 'opportunity',
-    title: '15 oportunidades de upsell',
-    desc: 'Clientes elegíveis para Ford Plus',
-    icon: 'trending-up',
-    color: COLORS.success,
-    bg: '#e9f7ee',
-  },
-];
+function buildKpiCards(k: KpisWithDelta | undefined): KpiCard[] {
+  return [
+    {
+      id: 'k1',
+      label: 'Veículos em garantia',
+      value: k ? k.vehiclesUnderWarranty.toLocaleString('pt-BR') : '—',
+      delta: k?.vehiclesUnderWarrantyDelta,
+      icon: 'shield-car',
+      color: COLORS.primary,
+      bg: '#e8efff',
+    },
+    {
+      id: 'k2',
+      label: 'Taxa VIN Share',
+      value: k ? `${k.vinSharePercent.toFixed(1)}%` : '—',
+      delta: k?.vinSharePercentDelta,
+      deltaSuffix: '%',
+      icon: 'chart-donut',
+      color: '#1e8e3e',
+      bg: '#e9f7ee',
+    },
+    {
+      id: 'k3',
+      label: 'Receita estimada',
+      value: k ? formatCurrency(k.estimatedRevenue) : '—',
+      delta: k?.estimatedRevenueDelta,
+      deltaSuffix: '%',
+      icon: 'cash-multiple',
+      color: '#f5a623',
+      bg: '#fff4e0',
+    },
+    {
+      id: 'k4',
+      label: 'Leads em risco',
+      value: k ? k.leadsAtRisk.toLocaleString('pt-BR') : '—',
+      delta: k?.leadsAtRiskDelta,
+      invertDelta: true,
+      icon: 'account-alert',
+      color: '#9c27b0',
+      bg: '#f3e5f5',
+    },
+  ];
+}
 
 export default function DashboardScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const [period, setPeriod] = useState('7d');
+  const [period, setPeriod] = useState<AnalyticsPeriod>('7d');
+
+  const kpisQuery = useKpis(period);
+  const seriesQuery = useVinShareSeries('day');
+  const byDealershipQuery = useVinShareByDealership(period === '7d' ? '30d' : period);
+
+  const kpiCards = buildKpiCards(kpisQuery.data);
+  const chartPoints = seriesQuery.data?.points ?? [];
+  const peakValue = seriesQuery.data?.peakPercent ?? 0;
+  const topDealers = byDealershipQuery.data ?? [];
 
   const handleLogout = async () => {
     await authService.logout();
@@ -178,32 +175,52 @@ export default function DashboardScreen() {
         </View>
 
         {/* KPIs Grid */}
+        {kpisQuery.isError && (
+          <View style={[styles.kpiCard, { width: '100%', padding: 20, marginBottom: 12 }]}>
+            <Text style={{ color: '#c62828', fontWeight: '700' }}>Não foi possível carregar KPIs</Text>
+            <TouchableOpacity onPress={() => kpisQuery.refetch()} style={{ marginTop: 8 }}>
+              <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Tentar de novo</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.kpisGrid}>
-          {KPIS.map((k) => (
-            <View key={k.id} style={styles.kpiCard}>
-              <View style={[styles.kpiIcon, { backgroundColor: k.bg }]}>
-                <MaterialCommunityIcons name={k.icon as any} size={22} color={k.color} />
-              </View>
-              <Text style={styles.kpiLabel}>{k.label}</Text>
-              <Text style={styles.kpiValue}>{k.value}</Text>
-              <View style={styles.kpiDelta}>
-                <MaterialCommunityIcons
-                  name={k.deltaPositive ? 'trending-up' : 'trending-down'}
-                  size={12}
-                  color={k.deltaPositive ? COLORS.success : '#ea4335'}
-                />
-                <Text
-                  style={[
-                    styles.kpiDeltaText,
-                    { color: k.deltaPositive ? COLORS.success : '#ea4335' },
-                  ]}
-                >
-                  {k.delta}
+          {kpiCards.map((k) => {
+            const hasDelta = typeof k.delta === 'number';
+            const isUp = hasDelta && k.delta! > 0;
+            const positive = k.invertDelta ? !isUp : isUp;
+            return (
+              <View key={k.id} style={styles.kpiCard}>
+                <View style={[styles.kpiIcon, { backgroundColor: k.bg }]}>
+                  <MaterialCommunityIcons name={k.icon as any} size={22} color={k.color} />
+                </View>
+                <Text style={styles.kpiLabel}>{k.label}</Text>
+                <Text style={styles.kpiValue}>
+                  {kpisQuery.isLoading ? '...' : k.value}
                 </Text>
-                <Text style={styles.kpiDeltaSub}>vs anterior</Text>
+                {hasDelta && (
+                  <View style={styles.kpiDelta}>
+                    <MaterialCommunityIcons
+                      name={isUp ? 'trending-up' : 'trending-down'}
+                      size={12}
+                      color={positive ? COLORS.success : '#ea4335'}
+                    />
+                    <Text
+                      style={[
+                        styles.kpiDeltaText,
+                        { color: positive ? COLORS.success : '#ea4335' },
+                      ]}
+                    >
+                      {isUp ? '+' : ''}
+                      {k.delta}
+                      {k.deltaSuffix ?? ''}
+                    </Text>
+                    <Text style={styles.kpiDeltaSub}>vs anterior</Text>
+                  </View>
+                )}
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Chart */}
@@ -219,65 +236,94 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-          <View style={styles.chart}>
-            {CHART_DATA.map((d, i) => {
-              const isPeak = d.value === Math.max(...CHART_DATA.map((x) => x.value));
-              return (
-                <View key={i} style={styles.chartCol}>
-                  <View style={styles.chartBarWrap}>
-                    {isPeak && (
-                      <View style={styles.chartPeakLabel}>
-                        <Text style={styles.chartPeakText}>{(d.value * 100).toFixed(0)}%</Text>
-                      </View>
-                    )}
-                    <View
-                      style={[
-                        styles.chartBar,
-                        {
-                          height: `${d.value * 100}%`,
-                          backgroundColor: isPeak ? COLORS.primary : '#c5d4f0',
-                        },
-                      ]}
-                    />
+          {seriesQuery.isLoading ? (
+            <View style={{ height: 140, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator color={COLORS.primary} />
+            </View>
+          ) : chartPoints.length === 0 ? (
+            <View style={{ height: 140, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: COLORS.gray, fontSize: 12 }}>Sem dados no período.</Text>
+            </View>
+          ) : (
+            <View style={styles.chart}>
+              {chartPoints.map((d, i) => {
+                const isPeak = d.vinSharePercent === peakValue;
+                const height = peakValue > 0 ? (d.vinSharePercent / peakValue) * 100 : 0;
+                return (
+                  <View key={i} style={styles.chartCol}>
+                    <View style={styles.chartBarWrap}>
+                      {isPeak && (
+                        <View style={styles.chartPeakLabel}>
+                          <Text style={styles.chartPeakText}>
+                            {d.vinSharePercent.toFixed(0)}%
+                          </Text>
+                        </View>
+                      )}
+                      <View
+                        style={[
+                          styles.chartBar,
+                          {
+                            height: `${height}%`,
+                            backgroundColor: isPeak ? COLORS.primary : '#c5d4f0',
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.chartLabel}>{d.label}</Text>
                   </View>
-                  <Text style={styles.chartLabel}>{d.label}</Text>
-                </View>
-              );
-            })}
-          </View>
+                );
+              })}
+            </View>
+          )}
 
           <View style={styles.chartFooter}>
             <View style={styles.chartFooterItem}>
               <Text style={styles.chartFooterLabel}>Média</Text>
-              <Text style={styles.chartFooterValue}>63%</Text>
+              <Text style={styles.chartFooterValue}>
+                {seriesQuery.data ? `${seriesQuery.data.averagePercent.toFixed(0)}%` : '—'}
+              </Text>
             </View>
             <View style={styles.chartFooterSep} />
             <View style={styles.chartFooterItem}>
               <Text style={styles.chartFooterLabel}>Pico</Text>
-              <Text style={styles.chartFooterValue}>85%</Text>
+              <Text style={styles.chartFooterValue}>
+                {seriesQuery.data ? `${seriesQuery.data.peakPercent.toFixed(0)}%` : '—'}
+              </Text>
             </View>
             <View style={styles.chartFooterSep} />
             <View style={styles.chartFooterItem}>
               <Text style={styles.chartFooterLabel}>Meta</Text>
-              <Text style={[styles.chartFooterValue, { color: COLORS.success }]}>70%</Text>
+              <Text style={[styles.chartFooterValue, { color: COLORS.success }]}>
+                {seriesQuery.data ? `${seriesQuery.data.targetPercent.toFixed(0)}%` : '—'}
+              </Text>
             </View>
           </View>
         </View>
 
-        {/* Insights */}
-        <Text style={styles.sectionTitle}>Insights e oportunidades</Text>
-        {INSIGHTS.map((i) => (
-          <TouchableOpacity key={i.id} style={styles.insightCard} activeOpacity={0.85}>
-            <View style={[styles.insightIcon, { backgroundColor: i.bg }]}>
-              <MaterialCommunityIcons name={i.icon as any} size={22} color={i.color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.insightTitle}>{i.title}</Text>
-              <Text style={styles.insightDesc}>{i.desc}</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.gray} />
-          </TouchableOpacity>
-        ))}
+        {/* Insights derived from KPIs */}
+        {kpisQuery.data && kpisQuery.data.leadsAtRisk > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Insights e oportunidades</Text>
+            <TouchableOpacity
+              style={styles.insightCard}
+              activeOpacity={0.85}
+              onPress={() => router.push('/(analyst)/leads' as any)}
+            >
+              <View style={[styles.insightIcon, { backgroundColor: '#fce8e6' }]}>
+                <MaterialCommunityIcons name="alert-circle" size={22} color="#ea4335" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.insightTitle}>
+                  {kpisQuery.data.leadsAtRisk} clientes em risco
+                </Text>
+                <Text style={styles.insightDesc}>
+                  Toque para ver a lista e priorizar contatos
+                </Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+          </>
+        )}
 
         {/* Top Dealers */}
         <View style={styles.sectionHead}>
@@ -288,10 +334,24 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.dealersCard}>
-          {TOP_DEALERS.map((d, i) => (
+          {byDealershipQuery.isLoading && (
+            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <ActivityIndicator color={COLORS.primary} size="small" />
+            </View>
+          )}
+
+          {!byDealershipQuery.isLoading && topDealers.length === 0 && (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <Text style={{ color: COLORS.gray, fontSize: 13 }}>
+                Sem dados de concessionárias.
+              </Text>
+            </View>
+          )}
+
+          {topDealers.map((d, i) => (
             <View
-              key={d.id}
-              style={[styles.dealerRow, i === TOP_DEALERS.length - 1 && { borderBottomWidth: 0 }]}
+              key={d.dealershipId}
+              style={[styles.dealerRow, i === topDealers.length - 1 && { borderBottomWidth: 0 }]}
             >
               <View style={[styles.dealerRank, i === 0 && styles.dealerRankGold]}>
                 <Text style={[styles.dealerRankText, i === 0 && { color: '#a36b00' }]}>
@@ -299,21 +359,40 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.dealerName}>{d.name}</Text>
-                <Text style={styles.dealerRevenue}>{d.revenue}</Text>
+                <Text style={styles.dealerName}>{d.dealershipName}</Text>
+                <Text style={styles.dealerRevenue}>{formatCurrency(d.estimatedRevenue)}</Text>
               </View>
               <View style={styles.dealerRight}>
-                <Text style={styles.dealerShare}>{d.share}</Text>
+                <Text style={styles.dealerShare}>{d.vinSharePercent.toFixed(0)}%</Text>
                 <View style={styles.dealerTrend}>
                   <MaterialCommunityIcons
-                    name={d.trend === 'up' ? 'arrow-up' : 'arrow-down'}
+                    name={
+                      d.trend === 'UP'
+                        ? 'arrow-up'
+                        : d.trend === 'DOWN'
+                          ? 'arrow-down'
+                          : 'minus'
+                    }
                     size={11}
-                    color={d.trend === 'up' ? COLORS.success : '#ea4335'}
+                    color={
+                      d.trend === 'UP'
+                        ? COLORS.success
+                        : d.trend === 'DOWN'
+                          ? '#ea4335'
+                          : COLORS.gray
+                    }
                   />
                   <Text
                     style={[
                       styles.dealerTrendText,
-                      { color: d.trend === 'up' ? COLORS.success : '#ea4335' },
+                      {
+                        color:
+                          d.trend === 'UP'
+                            ? COLORS.success
+                            : d.trend === 'DOWN'
+                              ? '#ea4335'
+                              : COLORS.gray,
+                      },
                     ]}
                   >
                     VIN
