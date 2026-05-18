@@ -46,6 +46,13 @@ export default function ClientLayout() {
           tabBarIcon: ({ color }) => <MaterialCommunityIcons name="chat" size={24} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="account-circle" size={24} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
