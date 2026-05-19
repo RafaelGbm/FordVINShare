@@ -14,11 +14,15 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 import { useAuthStore } from '../utils/store';
 import { COLORS } from '../constants';
+import { ENV } from '../config/env';
 import FordLogo from '../components/FordLogo';
 import { authService, UserRole } from '../services/auth.service';
 import { ApiError } from '../services/api';
+import { DemoRole, getDemoUser, seedDemoCache } from '../utils/demoMode';
 
 function mapApiRole(role: UserRole): 'client' | 'analyst' {
   return role === 'ANALYST' ? 'analyst' : 'client';
@@ -31,8 +35,27 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setUser = useAuthStore((state) => state.setUser);
+  const qc = useQueryClient();
 
   const isValid = email.trim().length > 3 && email.includes('@') && password.length >= 6;
+
+  function enterDemo(role: DemoRole) {
+    const me = getDemoUser(role);
+    seedDemoCache(qc, role);
+    const mapped = mapApiRole(role);
+    setUser(
+      {
+        id: me.userId,
+        email: me.email,
+        name: me.name,
+        phone: me.phone,
+        role: mapped,
+        created_at: me.createdAt,
+      },
+      mapped
+    );
+    router.replace(mapped === 'analyst' ? '/(analyst)/dashboard' : '/(client)/home');
+  }
 
   const handleLogin = async () => {
     if (!isValid || loading) return;
@@ -101,6 +124,36 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Acesse sua conta</Text>
           <Text style={styles.cardSubtitle}>Use o email e senha cadastrados</Text>
+
+          {ENV.DEMO_MODE && (
+            <View style={styles.demoBox}>
+              <View style={styles.demoHeadRow}>
+                <MaterialCommunityIcons name="flask-outline" size={16} color="#a36b00" />
+                <Text style={styles.demoTitle}>Modo demonstração</Text>
+              </View>
+              <Text style={styles.demoText}>
+                Backend indisponível: entre como Cliente ou Analista para navegar com dados de exemplo.
+              </Text>
+              <View style={styles.demoRow}>
+                <TouchableOpacity
+                  style={styles.demoBtn}
+                  onPress={() => enterDemo('CLIENT')}
+                  activeOpacity={0.85}
+                >
+                  <MaterialCommunityIcons name="account" size={16} color="#fff" />
+                  <Text style={styles.demoBtnText}>Cliente</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.demoBtn, styles.demoBtnSecondary]}
+                  onPress={() => enterDemo('ANALYST')}
+                  activeOpacity={0.85}
+                >
+                  <MaterialCommunityIcons name="chart-box" size={16} color={COLORS.primary} />
+                  <Text style={styles.demoBtnSecondaryText}>Analista</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {/* Email */}
           <Text style={styles.label}>Email</Text>
@@ -312,6 +365,57 @@ const styles = StyleSheet.create({
   },
 
   /* Error */
+  /* Demo box */
+  demoBox: {
+    backgroundColor: '#fff8e6',
+    borderRadius: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f5a623',
+    padding: 14,
+    marginBottom: 18,
+  },
+  demoHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  demoTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#a36b00',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  demoText: {
+    fontSize: 12,
+    color: '#8c5a00',
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  demoRow: { flexDirection: 'row', gap: 8 },
+  demoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 11,
+    borderRadius: 10,
+    gap: 6,
+  },
+  demoBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  demoBtnSecondary: {
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+  },
+  demoBtnSecondaryText: {
+    color: COLORS.primary,
+    fontWeight: '800',
+    fontSize: 13,
+  },
+
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -141,6 +141,21 @@ npm start
 # pressione 'a' (Android), 'i' (iOS) ou 'w' (Web)
 ```
 
+### 🎬 Modo demonstração (sem backend)
+
+Quando o backend Java não estiver disponível, defina no `.env`:
+
+```bash
+EXPO_PUBLIC_DEMO_MODE=true
+```
+
+A LoginScreen passa a exibir um painel amarelo com dois botões:
+
+- **Cliente** → entra como João Silva (Ranger 2023) com veículos, agendamentos, pontos, chat e pesquisa NPS preenchidos
+- **Analista** → entra como Ana Oliveira com KPIs, gráfico VIN Share, leads, distribuição de segmentos e visão 360 já populados
+
+O React Query é semeado com fixtures realistas (`src/utils/demoMode.ts`) antes das telas montarem, então tudo carrega instantaneamente. Apenas as **mutations** (criar agendamento, resgatar prêmio, enviar mensagem no chat, etc.) tentam bater na API real e falham — o demo serve para apresentar navegação e estados visuais, não para escrever dados.
+
 ---
 
 ## 📚 Referências
