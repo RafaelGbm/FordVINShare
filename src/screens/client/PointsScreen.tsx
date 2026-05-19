@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -21,8 +20,6 @@ import {
   useRedeemReward,
 } from '../../hooks/useLoyalty';
 import { ApiError } from '../../services/api';
-
-const { width } = Dimensions.get('window');
 
 const CATEGORIES = [
   { id: 'all', label: 'Todos' },
@@ -62,7 +59,10 @@ export default function PointsScreen() {
   const tier = useMemo(() => tierFor(balance), [balance]);
   const tierPct = tier.next > 0 ? Math.min(100, (balance / tier.next) * 100) : 100;
 
-  const transactions = transactionsQuery.data?.content ?? [];
+  const transactions = useMemo(
+    () => transactionsQuery.data?.content ?? [],
+    [transactionsQuery.data]
+  );
   const monthEarnings = useMemo(() => {
     const now = new Date();
     return transactions

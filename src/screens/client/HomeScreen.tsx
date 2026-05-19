@@ -7,16 +7,13 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
-  ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { useAuthStore } from '../../utils/store';
 import { COLORS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
 import { StateBox } from '../../components/StateBox';
-import { authService } from '../../services/auth.service';
 import { useMe } from '../../hooks/useAuth';
 import { useMyVehicles, useVehicleWarranty, useMaintenanceAlerts } from '../../hooks/useVehicles';
 import { useMyServices } from '../../hooks/useServices';
@@ -64,7 +61,6 @@ function formatShortDate(iso: string) {
 }
 
 export default function HomeScreen() {
-  const logout = useAuthStore((state) => state.logout);
   const { data: me } = useMe();
 
   const vehiclesQuery = useMyVehicles();
@@ -82,12 +78,6 @@ export default function HomeScreen() {
   const warrantyPct = warranty
     ? Math.min(100, Math.max(0, (warranty.daysRemaining / 365) * 100))
     : 0;
-
-  const handleLogout = async () => {
-    await authService.logout();
-    logout();
-    router.replace('/');
-  };
 
   return (
     <View style={styles.root}>

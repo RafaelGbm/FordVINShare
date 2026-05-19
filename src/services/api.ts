@@ -3,6 +3,7 @@ import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } fro
 import { ENV } from '../config/env';
 import { secureStorage } from './secureStorage';
 
+// eslint-disable-next-line import/no-named-as-default-member -- axios.create is the canonical instance factory
 export const api = axios.create({
   baseURL: ENV.API_URL,
   timeout: 15000,
@@ -101,7 +102,7 @@ api.interceptors.response.use(
           `Bearer ${newToken}`;
 
         return api.request(originalRequest);
-      } catch (refreshError) {
+      } catch {
         refreshPromise = null;
         await secureStorage.clear();
         onUnauthenticated?.();

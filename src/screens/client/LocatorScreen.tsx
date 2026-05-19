@@ -8,7 +8,6 @@ import {
   TextInput,
   StatusBar,
   Dimensions,
-  ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 

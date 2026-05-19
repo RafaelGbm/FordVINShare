@@ -61,7 +61,7 @@ export default function LeadsScreen() {
   const [search, setSearch] = useState('');
 
   const { data, isLoading, error, refetch, isRefetching } = useLeads({ size: 200 });
-  const leads = data?.content ?? [];
+  const leads = useMemo(() => data?.content ?? [], [data]);
 
   const counts = useMemo(() => {
     const acc: Record<UiStatus, number> = {

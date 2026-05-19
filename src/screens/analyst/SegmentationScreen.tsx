@@ -63,7 +63,6 @@ export default function SegmentationScreen() {
   );
 
   const total = data?.totalCustomers ?? 0;
-  const fielBucket = orderedBuckets.find((b) => b.segment === 'FIEL');
   const riskBucket = orderedBuckets.find((b) => b.segment === 'ESQUECIDO');
   const lostBucket = orderedBuckets.find((b) => b.segment === 'ABANDONO');
 

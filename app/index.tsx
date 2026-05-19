@@ -12,15 +12,17 @@ import FordLogo from '../src/components/FordLogo';
 export default function Index() {
   const user = useAuthStore((state) => state.user);
   const role = useAuthStore((state) => state.role);
-  const setUser = useAuthStore((state) => state.setUser);
   const [bootstrapping, setBootstrapping] = useState(true);
 
   useEffect(() => {
+    // Bootstrap intentionally runs once on mount. We read the current
+    // user from getState() (no subscription) so subsequent updates
+    // don't restart the effect, and call setUser the same way to
+    // avoid pulling a (stable) selector reference into the deps.
     let cancelled = false;
 
     (async () => {
-      // If we already have the user in memory, nothing to do.
-      if (user) {
+      if (useAuthStore.getState().user) {
         if (!cancelled) setBootstrapping(false);
         return;
       }
@@ -35,7 +37,7 @@ export default function Index() {
         const me = await authService.getMe();
         if (cancelled) return;
         const mappedRole = me.role === 'ANALYST' ? 'analyst' : 'client';
-        setUser(
+        useAuthStore.getState().setUser(
           {
             id: me.userId,
             email: me.email,
