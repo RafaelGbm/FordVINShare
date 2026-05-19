@@ -13,6 +13,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS } from '../../constants';
+import { StateBox } from '../../components/StateBox';
 import { useDealerships } from '../../hooks/useDealerships';
 import { useUserLocation } from '../../hooks/useUserLocation';
 import { ServiceType } from '../../services/services.service';
@@ -209,34 +210,24 @@ export default function LocatorScreen() {
           </TouchableOpacity>
         </View>
 
-        {isLoading && (
-          <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-            <ActivityIndicator color={COLORS.primary} />
-          </View>
-        )}
+        {isLoading && <StateBox variant="loading" />}
 
         {isError && (
-          <View style={[styles.dealerCard, { padding: 20 }]}>
-            <Text style={{ color: '#c62828', fontWeight: '700' }}>Não foi possível carregar</Text>
-            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 4 }}>
-              Verifique sua conexão e tente novamente.
-            </Text>
-            <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 10 }}>
-              <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Tentar de novo</Text>
-            </TouchableOpacity>
-          </View>
+          <StateBox
+            variant="error"
+            title="Não foi possível carregar"
+            message="Verifique sua conexão e tente novamente."
+            onRetry={() => refetch()}
+          />
         )}
 
         {!isLoading && !isError && dealerships.length === 0 && (
-          <View style={[styles.dealerCard, { alignItems: 'center', padding: 24 }]}>
-            <MaterialCommunityIcons name="store-off" size={40} color={COLORS.border} />
-            <Text style={{ fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>
-              Nenhuma concessionária encontrada
-            </Text>
-            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 4, textAlign: 'center' }}>
-              Ajuste o filtro ou aumente o raio de busca.
-            </Text>
-          </View>
+          <StateBox
+            variant="empty"
+            iconName="store-off"
+            title="Nenhuma concessionária encontrada"
+            message="Ajuste o filtro ou aumente o raio de busca."
+          />
         )}
 
         {dealerships.map((d) => {

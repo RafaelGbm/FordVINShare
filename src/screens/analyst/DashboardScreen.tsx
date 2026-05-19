@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { COLORS } from '../../constants';
 import { useAuthStore } from '../../utils/store';
 import FordLogo from '../../components/FordLogo';
+import { StateBox } from '../../components/StateBox';
 import { authService } from '../../services/auth.service';
 import { useMe } from '../../hooks/useAuth';
 import {
@@ -177,12 +178,13 @@ export default function DashboardScreen() {
 
         {/* KPIs Grid */}
         {kpisQuery.isError && (
-          <View style={[styles.kpiCard, { width: '100%', padding: 20, marginBottom: 12 }]}>
-            <Text style={{ color: '#c62828', fontWeight: '700' }}>Não foi possível carregar KPIs</Text>
-            <TouchableOpacity onPress={() => kpisQuery.refetch()} style={{ marginTop: 8 }}>
-              <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Tentar de novo</Text>
-            </TouchableOpacity>
-          </View>
+          <StateBox
+            variant="error"
+            title="Não foi possível carregar KPIs"
+            message="Verifique sua conexão e tente novamente."
+            onRetry={() => kpisQuery.refetch()}
+            style={{ marginBottom: 12 }}
+          />
         )}
 
         <View style={styles.kpisGrid}>
@@ -335,18 +337,14 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.dealersCard}>
-          {byDealershipQuery.isLoading && (
-            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-              <ActivityIndicator color={COLORS.primary} size="small" />
-            </View>
-          )}
+          {byDealershipQuery.isLoading && <StateBox variant="loading" />}
 
           {!byDealershipQuery.isLoading && topDealers.length === 0 && (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-              <Text style={{ color: COLORS.gray, fontSize: 13 }}>
-                Sem dados de concessionárias.
-              </Text>
-            </View>
+            <StateBox
+              variant="empty"
+              iconName="store-off"
+              message="Sem dados de concessionárias."
+            />
           )}
 
           {topDealers.map((d, i) => (

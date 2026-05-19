@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { useAuthStore } from '../../utils/store';
 import { COLORS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
+import { StateBox } from '../../components/StateBox';
 import { authService } from '../../services/auth.service';
 import { useMe } from '../../hooks/useAuth';
 import { useMyVehicles, useVehicleWarranty, useMaintenanceAlerts } from '../../hooks/useVehicles';
@@ -116,35 +117,30 @@ export default function HomeScreen() {
       >
         {/* Vehicle Card */}
         {vehiclesQuery.isLoading && (
-          <View style={[styles.vehicleCard, { paddingVertical: 40, alignItems: 'center' }]}>
-            <ActivityIndicator color={COLORS.primary} />
-            <Text style={{ color: COLORS.gray, marginTop: 8, fontSize: 12 }}>
-              Carregando seu veículo...
-            </Text>
+          <View style={styles.vehicleCard}>
+            <StateBox variant="loading" message="Carregando seu veículo..." />
           </View>
         )}
 
         {vehiclesQuery.isError && (
-          <View style={[styles.vehicleCard, { padding: 20 }]}>
-            <Text style={{ color: '#c62828', fontWeight: '700' }}>Não foi possível carregar</Text>
-            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 4 }}>
-              Verifique sua conexão e tente novamente.
-            </Text>
-            <TouchableOpacity onPress={() => vehiclesQuery.refetch()} style={{ marginTop: 10 }}>
-              <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Tentar de novo</Text>
-            </TouchableOpacity>
+          <View style={styles.vehicleCard}>
+            <StateBox
+              variant="error"
+              title="Não foi possível carregar"
+              message="Verifique sua conexão e tente novamente."
+              onRetry={() => vehiclesQuery.refetch()}
+            />
           </View>
         )}
 
         {!vehiclesQuery.isLoading && !vehiclesQuery.isError && !vehicle && (
-          <View style={[styles.vehicleCard, { alignItems: 'center', padding: 24 }]}>
-            <MaterialCommunityIcons name="car-off" size={40} color={COLORS.border} />
-            <Text style={{ fontWeight: '800', color: COLORS.dark, marginTop: 8 }}>
-              Nenhum veículo cadastrado
-            </Text>
-            <Text style={{ color: COLORS.gray, fontSize: 12, marginTop: 4, textAlign: 'center' }}>
-              Adicione seu Ford no perfil para acompanhar garantia e revisões.
-            </Text>
+          <View style={styles.vehicleCard}>
+            <StateBox
+              variant="empty"
+              iconName="car-off"
+              title="Nenhum veículo cadastrado"
+              message="Adicione seu Ford no perfil para acompanhar garantia e revisões."
+            />
           </View>
         )}
 
@@ -307,18 +303,14 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.timeline}>
-          {servicesQuery.isLoading && (
-            <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-              <ActivityIndicator color={COLORS.primary} size="small" />
-            </View>
-          )}
+          {servicesQuery.isLoading && <StateBox variant="loading" />}
 
           {!servicesQuery.isLoading && recentServices.length === 0 && (
-            <View style={[styles.timelineCard, { marginLeft: 0, alignItems: 'center', padding: 20 }]}>
-              <Text style={{ color: COLORS.gray, fontSize: 13 }}>
-                Nenhum serviço registrado ainda.
-              </Text>
-            </View>
+            <StateBox
+              variant="empty"
+              iconName="history"
+              message="Nenhum serviço registrado ainda."
+            />
           )}
 
           {recentServices.map((service, i, arr) => (
