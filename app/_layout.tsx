@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { bootstrapAuth } from '../src/services/auth.service';
 import { useAuthStore } from '../src/utils/store';
 import { usePushRegistration } from '../src/hooks/usePushRegistration';
+import { useNotificationDeepLinks } from '../src/hooks/useNotificationDeepLinks';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,7 @@ export default function RootLayout() {
 
 function AppShell() {
   usePushRegistration();
+  useNotificationDeepLinks();
 
   return (
     <>
