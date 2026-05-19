@@ -2,12 +2,18 @@ import 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
 import { bootstrapAuth } from '../src/services/auth.service';
 import { useAuthStore } from '../src/utils/store';
 import { usePushRegistration } from '../src/hooks/usePushRegistration';
 import { useNotificationDeepLinks } from '../src/hooks/useNotificationDeepLinks';
+import {
+  QUERY_CACHE_BUSTER,
+  queryPersister,
+  shouldPersistQuery,
+} from '../src/services/queryPersist';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,6 +21,9 @@ const queryClient = new QueryClient({
       retry: 1,
       staleTime: 30_000,
       refetchOnWindowFocus: false,
+      // Keep cached data around for 24h so the persisted entries are
+      // not garbage-collected before the next launch.
+      gcTime: 24 * 60 * 60 * 1000,
     },
   },
 });
@@ -30,9 +39,17 @@ export default function RootLayout() {
   }, [logout]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: 24 * 60 * 60 * 1000,
+        buster: QUERY_CACHE_BUSTER,
+        dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+      }}
+    >
       <AppShell />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 
