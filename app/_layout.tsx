@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { bootstrapAuth } from '../src/services/auth.service';
 import { useAuthStore } from '../src/utils/store';
+import { usePushRegistration } from '../src/hooks/usePushRegistration';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,12 +30,22 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AppShell />
+    </QueryClientProvider>
+  );
+}
+
+function AppShell() {
+  usePushRegistration();
+
+  return (
+    <>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(client)" />
         <Stack.Screen name="(analyst)" />
       </Stack>
       <StatusBar style="auto" />
-    </QueryClientProvider>
+    </>
   );
 }
