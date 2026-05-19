@@ -1,59 +1,91 @@
 # 📊 Ford VIN Share — Progresso do Projeto
 
-> Snapshot: **2026-05-14**
-> Status: Em desenvolvimento — foco em design Ford-inspired
+> Última atualização: **2026-05-19**
 
 ---
 
 ## ✅ Concluído
 
 ### 🏗️ Arquitetura
-- [x] Estrutura base com Expo + TypeScript
-- [x] Migração de `@react-navigation` para **expo-router** (file-based routing)
-- [x] Estrutura `app/` com route groups `(client)` e `(analyst)`
-- [x] Auth flow com redirect via `router.replace()`
-- [x] Componente `FordLogo` reusável usando PNG real
+- [x] Expo SDK 54 + TypeScript + React 19
+- [x] **expo-router** (file-based routing) substituindo `@react-navigation`
+- [x] Estrutura `app/` com route groups `(client)` e `(analyst)` + rotas modais (`/nps/[serviceId]`, `/customers/[customerId]`)
+- [x] **Zustand** mínimo (`user`, `role`, `setUser`, `logout`) — restante vem da API via React Query
+- [x] **React Query** com `staleTime: 30s`, `gcTime: 24h` e `retry: 1`
+- [x] **PersistQueryClientProvider** + AsyncStorage para modo offline da Home (allowlist: vehicles/warranty/alerts/services)
+- [x] **expo-secure-store** para `accessToken` + `refreshToken` (LGPD)
+- [x] **axios** com interceptors: injeta `Authorization: Bearer`, refresh transparente no 401 com fila compartilhada
+- [x] **ApiError** classe normalizando RFC 7807 (`problem+json`)
+- [x] Push registration (`expo-notifications`) + deep links `fordapp://` no cold/warm-start
+- [x] Geolocalização real (`expo-location`) com fallback SP
 
-### 🎨 Telas do Cliente
-- [x] **LoginScreen** — Hero azul Ford + logo PNG + toggle de role + cards de perfil demo + CTA principal + "Escanear VIN"
-- [x] **HomeScreen** — Hero greeting + vehicle card + warranty Ford Plus (barra de progresso) + quick actions 2x2 + timeline vertical de serviços + promo banner
-- [x] **SchedulingScreen** — Stepper 3 passos (Serviço → Local → Data) + resumo final + CTA footer fixo
-- [x] **LocatorScreen** — Search bar + mock de mapa (grid + pins) + filtros + cards de concessionárias com Rota/Ligar
-- [x] **PointsScreen** — Card de pontos translúcido + tier Ford Gold + recompensas em carousel + extrato
+### 🔌 Integração com a API Java
+Todos os 13 services do contrato implementados em `src/services/*.service.ts`:
+
+| Service | Endpoints | Tela |
+|---|---|---|
+| `auth.service` | login, refresh, logout, /me | LoginScreen, splash |
+| `vehicles.service` | list, getById, warranty, alerts, odometer | HomeScreen, ProfileScreen |
+| `services.service` | listMine, getById, listByVehicle | HomeScreen |
+| `dealerships.service` | list, getById, availability | LocatorScreen, SchedulingScreen |
+| `appointments.service` | serviceTypes, create, listMine, cancel, getById | SchedulingScreen, AppointmentsScreen |
+| `loyalty.service` | balance, transactions, rewards, redeem | PointsScreen, ProfileScreen |
+| `chat.service` | createSession, sendMessage, getHistory | ChatScreen |
+| `devices.service` | register, unregister | bootstrap silencioso |
+| `nps.service` | listPending, submit, get | NpsScreen, banner Home |
+| `analytics.service` | kpis, vin-share series, by-dealership, nps | DashboardScreen analista |
+| `leads.service` | list, getById, createAction | LeadsScreen |
+| `segments.service` | distribution, customers, customer-segment | SegmentationScreen |
+| `customers.service` | getById, get360, getTimeline | Customer360Screen |
+
+### 🎨 Telas implementadas
+
+**Cliente (6 abas + 1 modal):**
+- LoginScreen — form email/senha real, redirect por role
+- HomeScreen — vehicle card + warranty + alerts + timeline + NPS banner + promo
+- SchedulingScreen — stepper 3 passos integrado com `useServiceTypes` + `useDealerships` + `useDealershipAvailability` + `useCreateAppointment`
+- LocatorScreen — search + filtros por ServiceType + mock map + cards reais
+- PointsScreen — saldo + tier + carousel rewards + extrato + redeem
+- ChatScreen — sessão + histórico + suggestedActions + 429 handling
+- ProfileScreen — dados de `/me` + veículos + preferências + logout
+- NpsScreen (modal) — score 0-10 + categorias + comentário
+
+**Analista (3 abas + 1 push):**
+- DashboardScreen — KPIs + chart VIN Share + insights + top dealers
+- LeadsScreen — filtros por status + cards com risk score + ações
+- SegmentationScreen — donut + funil + distribuição
+- Customer360Screen — visão 360 acessada por toque no lead
 
 ---
 
-## ⏳ Pendente
+## 🟡 Pendências conhecidas
 
-### 🎨 Telas do Cliente
-- [ ] **ChatScreen** — Assistente IA (Claude API)
-- [ ] **ProfileScreen** — Dados do cliente + preferências
+### Funcionalmente
+- [ ] Backend Java rodando contra o app (ainda não exercitado)
+- [ ] Types vindos de OpenAPI (esperando `openapi.yaml`) — hoje os shapes são manuais
+- [ ] Tela do analista para `PATCH /appointments/{id}/check-in` e `/complete`
+- [ ] Botão de edição de endereço no Profile (sem endpoint no contrato)
+- [ ] Atualização do telefone/email no Profile (sem endpoint no contrato)
 
-### 📊 Telas do Analista
-- [ ] **DashboardScreen** — Aprimorar (KPIs, gráficos VIN Share, top concessionárias)
-- [ ] **LeadsScreen** — Lista segmentada por urgência (Em Risco / Perdido / Novo)
-- [ ] **SegmentationScreen** — Análise de distribuição de clientes por segmento
-
-### 🔌 Integração (depois do design)
-- [ ] Consumo de **API Java** (backend definido pelo cliente — NÃO usar Supabase nem mock)
-- [ ] Autenticação real
-- [ ] Animações com Reanimated
-- [ ] Notificações push
-- [ ] Modo offline com AsyncStorage
+### Visual/qualidade
+- [ ] Ícone do app e splash com identidade Ford definitiva
+- [ ] Universal Links em domínio próprio (hoje só `fordapp://`)
+- [ ] EAS Build configurado para distribuição
+- [ ] Error tracking (Sentry ou equivalente)
 
 ---
 
 ## 🎨 Design System Ford-Inspired
 
-| Elemento | Padrão |
-|----------|--------|
-| Cor primária | `#003087` (Azul Ford) |
+| Token | Valor |
+|---|---|
+| Primária | `#003087` (Azul Ford) |
 | Background | `#f5f5f7` |
-| Cards | `borderRadius: 14-20`, sombra sutil (`opacity: 0.04-0.06`) |
 | Hero | Azul Ford + blob decorativo + scroll content com `borderTopRadius: 28` |
+| Cards | `borderRadius: 14-20`, sombra `opacity: 0.04-0.06` |
 | Tipografia | Sans-serif bold, hierarquia forte |
-| Status badges | Dot colorido + texto (verde ativo, laranja warning) |
-| CTAs | Azul Ford sólido + sombra colorida + ícone seta |
+| Status badges | Dot colorido + texto |
+| Componente compartilhado de estado | `<StateBox variant="loading|error|empty" />` |
 
 ---
 
@@ -61,42 +93,57 @@
 
 ```
 app/
-├── _layout.tsx              # Root Stack (expo-router)
-├── index.tsx                # Login (redirect se autenticado)
+├── _layout.tsx              # Root Stack + Providers (Query, Push, DeepLinks)
+├── index.tsx                # Bootstrap (auto-login) → Login | Redirect
 ├── (client)/
 │   ├── _layout.tsx          # Tabs cliente
-│   ├── home.tsx, scheduling.tsx, locator.tsx, points.tsx, chat.tsx
-└── (analyst)/
-    ├── _layout.tsx          # Tabs analista
-    └── dashboard.tsx, leads.tsx, segmentation.tsx
+│   ├── home.tsx, scheduling.tsx, locator.tsx, points.tsx, chat.tsx, profile.tsx
+├── (analyst)/
+│   ├── _layout.tsx          # Tabs analista
+│   └── dashboard.tsx, leads.tsx, segmentation.tsx
+├── nps/[serviceId].tsx      # Modal slide-from-bottom
+└── customers/[customerId].tsx  # Slide-from-right (analista)
 
 src/
 ├── components/
-│   └── FordLogo.tsx         # Logo Ford reusável
-├── screens/
-│   ├── LoginScreen.tsx
-│   ├── client/              # HomeScreen, SchedulingScreen, etc.
-│   └── analyst/             # DashboardScreen, LeadsScreen, etc.
-├── utils/store.ts           # Zustand + mock data (temporário)
-└── constants/index.ts       # COLORS, etc.
-
-assets/
-└── images/
-    └── Logo-ford-vector-transparent-PNG-removebg-preview.png
+│   ├── FordLogo.tsx
+│   └── StateBox.tsx
+├── config/env.ts            # EXPO_PUBLIC_API_URL
+├── hooks/                   # useAuth, useVehicles, useServices, useDealerships,
+│                            #  useAppointments, useLoyalty, useChat, useDevices,
+│                            #  useNps, useAnalytics, useLeads, useSegments,
+│                            #  useCustomers, useUserLocation, usePushRegistration,
+│                            #  useNotificationDeepLinks
+├── screens/                 # 13 telas
+├── services/                # 13 services + api.ts + secureStorage + queryPersist
+├── types/index.ts           # User, UserRole (mínimo)
+├── utils/store.ts           # Zustand
+├── utils/pushNotifications.ts
+└── utils/deepLinks.ts
 ```
 
 ---
 
-## 📋 Histórico de Commits Recentes
+## 📋 Como rodar localmente
 
+```bash
+# 1. Instalar
+npm install
+
+# 2. Configurar API
+cp .env.example .env
+# Edite EXPO_PUBLIC_API_URL=http://localhost:8080/api/v1
+
+# 3. Subir o backend Java (não incluso neste repo)
+
+# 4. Rodar o app
+npm start
+# pressione 'a' (Android), 'i' (iOS) ou 'w' (Web)
 ```
-d7e638f  refactor: drop @react-navigation prop types from screens
-dbd0373  feat: build PointsScreen with loyalty card and rewards carousel
-dede5aa  feat: build LocatorScreen with stylized map and dealer cards
-18fe842  feat: build SchedulingScreen with 3-step booking flow
-8412522  feat: enhance HomeScreen with vehicle card, warranty bar and timeline
-444afec  feat: redesign LoginScreen with Ford-inspired hero and demo profiles
-52994b2  feat: add FordLogo component backed by Ford PNG asset
-091b970  chore: install react-native-svg and align expo dependency versions
-6ee01ce  chore: migrate navigation to expo-router
-```
+
+---
+
+## 📚 Referências
+
+- `API.md` — contrato detalhado do back consumido aqui
+- `BACKEND.md` — guia de integração do back (vindo do time do server)

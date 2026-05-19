@@ -128,7 +128,7 @@
 }
 ```
 
-**Categorias**: `ATENDIMENTO` · `TEMPO_DE_ESPERA` · `PREÇO` · `QUALIDADE_DO_SERVIÇO` · `COMUNICAÇÃO` · `INSTALAÇÕES`
+**Categorias** (sem acento, conforme `nps.service.ts`): `ATENDIMENTO` · `TEMPO_DE_ESPERA` · `PRECO` · `QUALIDADE_DO_SERVICO` · `COMUNICACAO` · `INSTALACOES`
 
 ### Programa de fidelidade
 
@@ -255,17 +255,15 @@ Payload de push traz `deepLink` (ex.: `fordapp://scheduling?vehicleId=...`)
 
 ---
 
-## ⚠️ Inconsistências do design atual com o contrato
+## ✅ Status da integração
 
-Ajustar quando integrar:
+Todas as 13 services do contrato estão implementadas em `src/services/`. Telas consomem via React Query hooks em `src/hooks/`. Inconsistências de enums (status, segmentos, service types, warranty) já estão alinhadas.
 
-| Tela | Hoje (mock) | API espera |
-|---|---|---|
-| LeadsScreen filtros | `Fiel` | `RECUPERADO` |
-| SegmentationScreen segmentos | `Fiel / Novo / Em risco / Perdido` | `FIEL / ECONOMICO / ESQUECIDO / ABANDONO` |
-| SchedulingScreen serviços | `Revisão / Óleo / Pneus / Diagnóstico` (4 custom) | `REVIEW / OIL_CHANGE / WARRANTY / REPAIR` |
-| HomeScreen warranty | só "ativa" | `ACTIVE / EXPIRING_SOON / EXPIRED` |
-| ChatScreen | mock local de respostas | `POST /chat/sessions/{id}/messages` + render `suggestedActions[]` |
+**O que ficou diferente do contrato:**
+- `NpsCategory` usa ASCII (`PRECO`, `INSTALACOES`) em vez de acentuado
+- `devices.service` aceita campos extras (`appVersion`, `consentAt`) — backend deve aceitar
+- `analytics.service` define `KpisWithDelta` com campos `*Delta?` opcionais; o app só mostra delta quando vier
+- `Reward`, `LoyaltyTransaction`, `DealershipVinShare`, `Customer360`, `TimelineEvent`, `VinSharePoint`, `VinShareSeries`, `SegmentBucket` foram **inferidos** — confirmar shapes quando OpenAPI gerar tipos
 
 ---
 
