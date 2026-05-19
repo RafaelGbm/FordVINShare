@@ -16,6 +16,8 @@ import { useAuthStore } from '../../utils/store';
 import { authService } from '../../services/auth.service';
 import { useMe } from '../../hooks/useAuth';
 import { useMyVehicles } from '../../hooks/useVehicles';
+import { useMyServices } from '../../hooks/useServices';
+import { useLoyaltyBalance } from '../../hooks/useLoyalty';
 import { WarrantyStatus } from '../../services/vehicles.service';
 
 function warrantyMeta(status: WarrantyStatus) {
@@ -33,6 +35,8 @@ export default function ProfileScreen() {
   const logout = useAuthStore((state) => state.logout);
   const { data: me } = useMe();
   const { data: vehicles } = useMyVehicles();
+  const { data: servicesPage } = useMyServices({ size: 1 });
+  const { data: loyalty } = useLoyaltyBalance();
   const [notifPush, setNotifPush] = useState(true);
   const [notifEmail, setNotifEmail] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -85,18 +89,24 @@ export default function ProfileScreen() {
 
           <View style={styles.profileStats}>
             <View style={styles.profileStat}>
-              <Text style={styles.profileStatValue}>12</Text>
+              <Text style={styles.profileStatValue}>
+                {servicesPage?.totalElements ?? '—'}
+              </Text>
               <Text style={styles.profileStatLabel}>serviços</Text>
             </View>
             <View style={styles.profileStatSep} />
             <View style={styles.profileStat}>
-              <Text style={styles.profileStatValue}>2.450</Text>
+              <Text style={styles.profileStatValue}>
+                {loyalty ? loyalty.balance.toLocaleString('pt-BR') : '—'}
+              </Text>
               <Text style={styles.profileStatLabel}>pontos</Text>
             </View>
             <View style={styles.profileStatSep} />
             <View style={styles.profileStat}>
-              <Text style={styles.profileStatValue}>4.9</Text>
-              <Text style={styles.profileStatLabel}>NPS</Text>
+              <Text style={styles.profileStatValue}>
+                {vehicles?.length ?? '—'}
+              </Text>
+              <Text style={styles.profileStatLabel}>veículos</Text>
             </View>
           </View>
         </View>
@@ -119,6 +129,16 @@ export default function ProfileScreen() {
             label="Endereço"
             value="Cadastre seu endereço"
             action
+          />
+        </View>
+
+        {/* Quick links */}
+        <SectionTitle>Meus serviços</SectionTitle>
+        <View style={styles.card}>
+          <MenuRow
+            icon="calendar-clock"
+            label="Meus agendamentos"
+            onPress={() => router.push('/appointments' as any)}
           />
         </View>
 
@@ -305,14 +325,16 @@ function MenuRow({
   label,
   badge,
   badgeColor,
+  onPress,
 }: {
   icon: string;
   label: string;
   badge?: string;
   badgeColor?: string;
+  onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={styles.row} activeOpacity={0.85}>
+    <TouchableOpacity style={styles.row} activeOpacity={0.85} onPress={onPress}>
       <View style={styles.rowIcon}>
         <MaterialCommunityIcons name={icon as any} size={18} color={COLORS.primary} />
       </View>

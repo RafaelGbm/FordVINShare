@@ -144,9 +144,13 @@ export default function HomeScreen() {
                   {vehicle.year} · {vehicle.plate}
                 </Text>
               </View>
-              <View style={styles.vehicleIcon}>
-                <MaterialCommunityIcons name="car-sports" size={36} color={COLORS.primary} />
-              </View>
+              <TouchableOpacity
+                style={styles.vehicleIcon}
+                onPress={() => router.push(`/odometer/${vehicle.id}` as any)}
+                activeOpacity={0.85}
+              >
+                <MaterialCommunityIcons name="speedometer" size={32} color={COLORS.primary} />
+              </TouchableOpacity>
             </View>
 
             <View style={styles.statsRow}>

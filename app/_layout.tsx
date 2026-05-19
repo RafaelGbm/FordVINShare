@@ -71,6 +71,14 @@ function AppShell() {
           name="customers/[customerId]"
           options={{ animation: 'slide_from_right' }}
         />
+        <Stack.Screen
+          name="appointments"
+          options={{ animation: 'slide_from_right' }}
+        />
+        <Stack.Screen
+          name="odometer/[vehicleId]"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </>
