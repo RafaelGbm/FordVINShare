@@ -50,6 +50,10 @@ function AppShell() {
           name="nps/[serviceId]"
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
         />
+        <Stack.Screen
+          name="customers/[customerId]"
+          options={{ animation: 'slide_from_right' }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </>

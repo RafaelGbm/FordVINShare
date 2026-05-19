@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
 import { useCreateLeadAction, useLeads } from '../../hooks/useLeads';
@@ -249,7 +250,11 @@ function LeadCard({ lead }: { lead: Lead }) {
   }
 
   return (
-    <TouchableOpacity style={styles.leadCard} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={styles.leadCard}
+      activeOpacity={0.9}
+      onPress={() => router.push(`/customers/${lead.customerId}` as any)}
+    >
       <View style={styles.leadHead}>
         <View style={[styles.leadAvatar, { backgroundColor: color }]}>
           <Text style={styles.leadAvatarText}>{initials}</Text>
@@ -324,7 +329,11 @@ function LeadCard({ lead }: { lead: Lead }) {
           <MaterialCommunityIcons name="message-text" size={16} color={COLORS.primary} />
           <Text style={styles.actionSecondaryText}>WhatsApp</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionIcon} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.actionIcon}
+          activeOpacity={0.85}
+          onPress={() => router.push(`/customers/${lead.customerId}` as any)}
+        >
           <MaterialCommunityIcons name="account-details" size={18} color={COLORS.gray} />
         </TouchableOpacity>
       </View>
