@@ -48,3 +48,30 @@ export function useCancelAppointment() {
     },
   });
 }
+
+export function useCheckInAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => appointmentsService.checkIn(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: appointmentKeys.all });
+    },
+  });
+}
+
+export function useCompleteAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...input
+    }: {
+      id: string;
+      totalAmount?: number;
+      summary?: string;
+    }) => appointmentsService.complete(id, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: appointmentKeys.all });
+    },
+  });
+}

@@ -61,4 +61,22 @@ export const appointmentsService = {
     );
     return data;
   },
+
+  async checkIn(appointmentId: string): Promise<AppointmentSummary> {
+    const { data } = await api.patch<AppointmentSummary>(
+      `/appointments/${appointmentId}/check-in`
+    );
+    return data;
+  },
+
+  async complete(
+    appointmentId: string,
+    input: { totalAmount?: number; summary?: string } = {}
+  ): Promise<AppointmentSummary> {
+    const { data } = await api.patch<AppointmentSummary>(
+      `/appointments/${appointmentId}/complete`,
+      input
+    );
+    return data;
+  },
 };

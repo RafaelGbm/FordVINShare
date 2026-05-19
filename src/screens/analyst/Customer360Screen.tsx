@@ -7,13 +7,22 @@ import {
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { COLORS } from '../../constants';
 import { useCustomer360, useCustomerTimeline } from '../../hooks/useCustomers';
+import {
+  useCheckInAppointment,
+  useCompleteAppointment,
+} from '../../hooks/useAppointments';
 import { ApiError } from '../../services/api';
+import {
+  AppointmentStatus,
+  AppointmentSummary,
+} from '../../services/appointments.service';
 import { LeadSegment } from '../../services/leads.service';
 import { ServiceType } from '../../services/services.service';
 import { WarrantyStatus } from '../../services/vehicles.service';
@@ -220,22 +229,7 @@ export default function Customer360Screen() {
           <>
             <Text style={styles.sectionTitle}>Agendamentos ativos</Text>
             {activeAppointments.map((a) => (
-              <View key={a.id} style={styles.apptCard}>
-                <View style={[styles.apptIcon, { backgroundColor: '#e8efff' }]}>
-                  <MaterialCommunityIcons name="calendar-check" size={20} color={COLORS.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.apptTitle}>
-                    {SERVICE_LABEL[a.serviceType]} · {a.vehicle.model}
-                  </Text>
-                  <Text style={styles.apptSub}>
-                    {a.dealership.name} · {formatDateBR(a.scheduledAt)}
-                  </Text>
-                </View>
-                <View style={styles.apptStatus}>
-                  <Text style={styles.apptStatusText}>{a.status}</Text>
-                </View>
-              </View>
+              <ActiveAppointmentCard key={a.id} appointment={a} />
             ))}
           </>
         )}
@@ -344,6 +338,117 @@ export default function Customer360Screen() {
 
         <View style={{ height: 24 }} />
       </ScrollView>
+    </View>
+  );
+}
+
+const STATUS_LABEL: Record<AppointmentStatus, string> = {
+  SCHEDULED: 'Aguardando chegada',
+  CHECKED_IN: 'Em atendimento',
+  COMPLETED: 'Concluído',
+  CANCELED: 'Cancelado',
+  NO_SHOW: 'Não compareceu',
+};
+
+function ActiveAppointmentCard({ appointment }: { appointment: AppointmentSummary }) {
+  const checkInMutation = useCheckInAppointment();
+  const completeMutation = useCompleteAppointment();
+
+  const canCheckIn = appointment.status === 'SCHEDULED';
+  const canComplete = appointment.status === 'CHECKED_IN';
+  const busy = checkInMutation.isPending || completeMutation.isPending;
+
+  async function handleCheckIn() {
+    try {
+      await checkInMutation.mutateAsync(appointment.id);
+    } catch (e) {
+      const message =
+        e instanceof ApiError ? e.problem.detail || e.problem.title : 'Falha ao registrar chegada.';
+      Alert.alert('Erro', message);
+    }
+  }
+
+  function handleComplete() {
+    Alert.alert(
+      'Concluir atendimento',
+      'Confirmar que o serviço foi finalizado?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Concluir',
+          onPress: async () => {
+            try {
+              await completeMutation.mutateAsync({ id: appointment.id });
+            } catch (e) {
+              const message =
+                e instanceof ApiError
+                  ? e.problem.detail || e.problem.title
+                  : 'Falha ao concluir.';
+              Alert.alert('Erro', message);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  return (
+    <View style={styles.apptCard}>
+      <View style={styles.apptCardHead}>
+        <View style={[styles.apptIcon, { backgroundColor: '#e8efff' }]}>
+          <MaterialCommunityIcons name="calendar-check" size={20} color={COLORS.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.apptTitle}>
+            {SERVICE_LABEL[appointment.serviceType]} · {appointment.vehicle.model}
+          </Text>
+          <Text style={styles.apptSub}>
+            {appointment.dealership.name} · {formatDateBR(appointment.scheduledAt)}
+          </Text>
+        </View>
+        <View style={styles.apptStatus}>
+          <Text style={styles.apptStatusText}>{STATUS_LABEL[appointment.status]}</Text>
+        </View>
+      </View>
+
+      {(canCheckIn || canComplete) && (
+        <View style={styles.apptActions}>
+          {canCheckIn && (
+            <TouchableOpacity
+              style={[styles.apptActionPrimary, busy && { opacity: 0.6 }]}
+              onPress={handleCheckIn}
+              disabled={busy}
+              activeOpacity={0.85}
+            >
+              {checkInMutation.isPending ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="account-arrow-right" size={16} color="#fff" />
+                  <Text style={styles.apptActionPrimaryText}>Registrar chegada</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+          {canComplete && (
+            <TouchableOpacity
+              style={[styles.apptActionPrimary, busy && { opacity: 0.6 }]}
+              onPress={handleComplete}
+              disabled={busy}
+              activeOpacity={0.85}
+            >
+              {completeMutation.isPending ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="check-circle" size={16} color="#fff" />
+                  <Text style={styles.apptActionPrimaryText}>Concluir atendimento</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -512,12 +617,34 @@ const styles = StyleSheet.create({
 
   /* Appointment */
   apptCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#fff',
     padding: 12,
     borderRadius: 14,
     marginBottom: 8,
+  },
+  apptCardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  apptActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  apptActionPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  apptActionPrimaryText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 13,
   },
   apptIcon: {
     width: 40,
