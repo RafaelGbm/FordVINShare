@@ -19,6 +19,7 @@ import { authService } from '../../services/auth.service';
 import { useMe } from '../../hooks/useAuth';
 import { useMyVehicles, useVehicleWarranty, useMaintenanceAlerts } from '../../hooks/useVehicles';
 import { useMyServices } from '../../hooks/useServices';
+import { usePendingSurveys } from '../../hooks/useNps';
 import { ServiceType } from '../../services/services.service';
 import { WarrantyStatus } from '../../services/vehicles.service';
 
@@ -70,6 +71,8 @@ export default function HomeScreen() {
   const warrantyQuery = useVehicleWarranty(vehicle?.id);
   const alertsQuery = useMaintenanceAlerts(vehicle?.id);
   const servicesQuery = useMyServices({ vehicleId: vehicle?.id, size: 3 });
+  const surveysQuery = usePendingSurveys();
+  const pendingSurvey = surveysQuery.data?.[0];
 
   const warranty = warrantyQuery.data;
   const firstAlert = alertsQuery.data?.[0];
@@ -236,6 +239,27 @@ export default function HomeScreen() {
               <MaterialCommunityIcons name="arrow-right" size={18} color={COLORS.primary} />
             </TouchableOpacity>
           </View>
+        )}
+
+        {pendingSurvey && (
+          <TouchableOpacity
+            style={[styles.alert, { backgroundColor: '#f5a623' }]}
+            activeOpacity={0.85}
+            onPress={() => router.push(`/nps/${pendingSurvey.serviceId}` as any)}
+          >
+            <View style={styles.alertIcon}>
+              <MaterialCommunityIcons name="star-outline" size={22} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.alertTitle}>Avalie seu último serviço</Text>
+              <Text style={styles.alertText}>
+                {SERVICE_TYPE_LABEL[pendingSurvey.serviceType]} · {pendingSurvey.dealership}
+              </Text>
+            </View>
+            <View style={styles.alertCta}>
+              <MaterialCommunityIcons name="arrow-right" size={18} color="#f5a623" />
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* Quick Actions */}

@@ -46,6 +46,10 @@ function AppShell() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(client)" />
         <Stack.Screen name="(analyst)" />
+        <Stack.Screen
+          name="nps/[serviceId]"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </>

@@ -36,6 +36,17 @@ export function parseDeepLink(input: string | undefined | null): string | null {
     queryPart = query;
   }
 
+  // The NPS deep link arrives as fordapp://nps?serviceId=... but the
+  // route uses a path param (/nps/:serviceId), so rewrite it.
+  if (pathPart === 'nps') {
+    const params = new URLSearchParams(queryPart);
+    const serviceId = params.get('serviceId');
+    if (!serviceId) return null;
+    params.delete('serviceId');
+    const rest = params.toString();
+    return rest ? `/nps/${serviceId}?${rest}` : `/nps/${serviceId}`;
+  }
+
   const route = HOST_TO_ROUTE[pathPart];
   if (!route) return null;
 
