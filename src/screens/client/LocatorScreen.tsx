@@ -14,6 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS } from '../../constants';
 import { useDealerships } from '../../hooks/useDealerships';
+import { useUserLocation } from '../../hooks/useUserLocation';
 import { ServiceType } from '../../services/services.service';
 
 const { width } = Dimensions.get('window');
@@ -35,9 +36,6 @@ const SERVICE_LABEL: Record<ServiceType, string> = {
   REPAIR: 'Reparo',
 };
 
-// User's current location placeholder. Once expo-location is wired,
-// replace with the geolocation watcher.
-const USER_COORDS = { lat: -23.55, lng: -46.63 };
 const DEFAULT_RADIUS_KM = 20;
 
 export default function LocatorScreen() {
@@ -45,9 +43,11 @@ export default function LocatorScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
+  const location = useUserLocation();
+
   const { data, isLoading, isError, refetch } = useDealerships({
-    lat: USER_COORDS.lat,
-    lng: USER_COORDS.lng,
+    lat: location.lat,
+    lng: location.lng,
     radiusKm: DEFAULT_RADIUS_KM,
     service: filter === 'all' ? undefined : filter,
   });
@@ -101,6 +101,15 @@ export default function LocatorScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {location.isFallback && location.status === 'denied' && (
+          <View style={styles.locationBanner}>
+            <MaterialCommunityIcons name="map-marker-off-outline" size={18} color="#a36b00" />
+            <Text style={styles.locationBannerText}>
+              Permissão de localização negada · usando São Paulo como referência
+            </Text>
+          </View>
+        )}
+
         {/* Map Preview */}
         <View style={styles.mapBox}>
           {/* Grid pattern simulating map */}
@@ -356,6 +365,25 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
   },
   scrollContent: { paddingTop: 18, paddingBottom: 30 },
+
+  locationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fff4e0',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 10,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f5a623',
+  },
+  locationBannerText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#a36b00',
+  },
 
   /* Map */
   mapBox: {

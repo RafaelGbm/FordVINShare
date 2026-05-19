@@ -46,6 +46,12 @@
           "color": "#003087",
           "defaultChannel": "default"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Use sua localização para encontrar concessionárias Ford próximas."
+        }
       ]
     ],
     "experiments": {

@@ -19,6 +19,7 @@ import {
   useServiceTypes,
   useCreateAppointment,
 } from '../../hooks/useAppointments';
+import { useUserLocation } from '../../hooks/useUserLocation';
 import { ServiceType } from '../../services/services.service';
 import { ApiError } from '../../services/api';
 
@@ -50,9 +51,6 @@ function buildNextDays(count: number) {
   return out;
 }
 
-// User's coords placeholder (same as LocatorScreen). Replace with expo-location later.
-const USER_COORDS = { lat: -23.55, lng: -46.63 };
-
 export default function SchedulingScreen() {
   const [step, setStep] = useState<Step>(1);
   const [service, setService] = useState<ServiceType | null>(null);
@@ -62,13 +60,15 @@ export default function SchedulingScreen() {
 
   const DATES = useMemo(() => buildNextDays(7), []);
 
+  const location = useUserLocation();
+
   const vehiclesQuery = useMyVehicles();
   const vehicle = vehiclesQuery.data?.[0];
 
   const serviceTypesQuery = useServiceTypes();
   const dealershipsQuery = useDealerships({
-    lat: USER_COORDS.lat,
-    lng: USER_COORDS.lng,
+    lat: location.lat,
+    lng: location.lng,
     radiusKm: 20,
     service: service ?? undefined,
   });
