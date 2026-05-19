@@ -16,6 +16,7 @@ import { useAuthStore } from '../../utils/store';
 import { COLORS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
 import { authService } from '../../services/auth.service';
+import { useMe } from '../../hooks/useAuth';
 import { useMyVehicles, useVehicleWarranty, useMaintenanceAlerts } from '../../hooks/useVehicles';
 import { useMyServices } from '../../hooks/useServices';
 import { ServiceType } from '../../services/services.service';
@@ -61,8 +62,8 @@ function formatShortDate(iso: string) {
 }
 
 export default function HomeScreen() {
-  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const { data: me } = useMe();
 
   const vehiclesQuery = useMyVehicles();
   const vehicle = vehiclesQuery.data?.[0];
@@ -100,7 +101,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.heroGreeting}>
-          <Text style={styles.heroHello}>Olá, {user?.name?.split(' ')[0]}</Text>
+          <Text style={styles.heroHello}>Olá, {me?.name?.split(' ')[0] ?? '—'}</Text>
           <Text style={styles.heroWelcome}>Bem-vindo de volta ao Ford Connect</Text>
         </View>
       </View>

@@ -16,6 +16,7 @@ import { COLORS } from '../../constants';
 import { useAuthStore } from '../../utils/store';
 import FordLogo from '../../components/FordLogo';
 import { authService } from '../../services/auth.service';
+import { useMe } from '../../hooks/useAuth';
 import {
   useKpis,
   useVinShareSeries,
@@ -95,8 +96,8 @@ function buildKpiCards(k: KpisWithDelta | undefined): KpiCard[] {
 }
 
 export default function DashboardScreen() {
-  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const { data: me } = useMe();
   const [period, setPeriod] = useState<AnalyticsPeriod>('7d');
 
   const kpisQuery = useKpis(period);
@@ -139,7 +140,7 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.heroGreeting}>
-          <Text style={styles.heroHello}>Olá, {user?.name?.split(' ')[0] || 'Ana'}</Text>
+          <Text style={styles.heroHello}>Olá, {me?.name?.split(' ')[0] ?? '—'}</Text>
           <View style={styles.dealerTag}>
             <MaterialCommunityIcons name="store" size={12} color="#fff" />
             <Text style={styles.dealerText}>Ford SP Centro · Analista</Text>
