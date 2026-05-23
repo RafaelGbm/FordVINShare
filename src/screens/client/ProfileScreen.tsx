@@ -43,7 +43,7 @@ export default function ProfileScreen() {
 
   const primaryVehicle = vehicles?.[0];
   const initials =
-    me?.name
+    me?.fullName
       ?.split(' ')
       .slice(0, 2)
       .map((n) => n[0])
@@ -79,7 +79,7 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="check-decagram" size={18} color={COLORS.primary} />
             </View>
           </View>
-          <Text style={styles.profileName}>{me?.name ?? '—'}</Text>
+          <Text style={styles.profileName}>{me?.fullName ?? '—'}</Text>
           <View style={styles.profileTier}>
             <MaterialCommunityIcons name="medal" size={12} color="#ffc966" />
             <Text style={styles.profileTierText}>

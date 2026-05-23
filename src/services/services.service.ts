@@ -14,10 +14,14 @@ export interface ServiceRecord {
 
 export interface PaginatedResponse<T> {
   content: T[];
-  page: number;
+  number: number;
   size: number;
   totalElements: number;
   totalPages: number;
+  first?: boolean;
+  last?: boolean;
+  empty?: boolean;
+  numberOfElements?: number;
 }
 
 export interface ListServicesParams {

@@ -26,9 +26,9 @@ export interface RefreshResponse {
 export interface Me {
   userId: string;
   role: UserRole;
-  name: string;
+  fullName: string | null;
   email: string;
-  phone: string;
+  phone: string | null;
   createdAt: string;
 }
 

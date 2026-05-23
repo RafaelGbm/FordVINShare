@@ -54,7 +54,7 @@ import { Customer360, TimelineEvent } from '../services/customers.service';
 export const DEMO_CLIENT: Me = {
   userId: 'demo-client-1',
   role: 'CLIENT',
-  name: 'João Silva',
+  fullName: 'João Silva',
   email: 'joao.silva@email.com',
   phone: '+5511988887777',
   createdAt: '2022-08-12T10:00:00-03:00',
@@ -63,7 +63,7 @@ export const DEMO_CLIENT: Me = {
 export const DEMO_ANALYST: Me = {
   userId: 'demo-analyst-1',
   role: 'ANALYST',
-  name: 'Ana Oliveira',
+  fullName: 'Ana Oliveira',
   email: 'ana.oliveira@ford.com.br',
   phone: '+5511999991111',
   createdAt: '2020-02-01T09:00:00-03:00',
@@ -129,7 +129,7 @@ const DEMO_SERVICES: PaginatedResponse<ServiceRecord> = {
       summary: 'Alinhamento + balanceamento',
     },
   ],
-  page: 0,
+  number: 0,
   size: 20,
   totalElements: 12,
   totalPages: 1,
@@ -250,7 +250,7 @@ const DEMO_LOYALTY_TX: PaginatedResponse<LoyaltyTransaction> = {
       createdAt: '2025-11-22T09:30:00-03:00',
     },
   ],
-  page: 0,
+  number: 0,
   size: 10,
   totalElements: 4,
   totalPages: 1,
@@ -298,7 +298,7 @@ const DEMO_PENDING_SURVEYS: PendingSurvey[] = [
 
 const DEMO_CHAT_SESSION: ChatSession = {
   sessionId: 'demo-session',
-  createdAt: '2026-05-19T10:30:00-03:00',
+  startedAt: '2026-05-19T10:30:00-03:00',
 };
 
 const DEMO_CHAT_HISTORY: ChatMessage[] = [
@@ -351,10 +351,10 @@ const DEMO_SERIES: VinShareSeries = {
 };
 
 const DEMO_DEALER_RANK: DealershipVinShare[] = [
-  { dealershipId: 'dlr-1', dealershipName: 'Ford SP Centro', vinSharePercent: 74, estimatedRevenue: 48000, trend: 'UP' },
-  { dealershipId: 'dlr-2', dealershipName: 'Ford Tatuapé', vinSharePercent: 68, estimatedRevenue: 38000, trend: 'UP' },
-  { dealershipId: 'dlr-3', dealershipName: 'Ford Morumbi', vinSharePercent: 62, estimatedRevenue: 32000, trend: 'DOWN' },
-  { dealershipId: 'dlr-4', dealershipName: 'Ford Pinheiros', vinSharePercent: 54, estimatedRevenue: 24000, trend: 'UP' },
+  { dealershipId: 'dlr-1', name: 'Ford SP Centro', vehiclesServed: 74, vehiclesTotal: 100, sharePercent: 74, estimatedRevenue: 48000, trend: 'UP' },
+  { dealershipId: 'dlr-2', name: 'Ford Tatuapé', vehiclesServed: 68, vehiclesTotal: 100, sharePercent: 68, estimatedRevenue: 38000, trend: 'UP' },
+  { dealershipId: 'dlr-3', name: 'Ford Morumbi', vehiclesServed: 62, vehiclesTotal: 100, sharePercent: 62, estimatedRevenue: 32000, trend: 'DOWN' },
+  { dealershipId: 'dlr-4', name: 'Ford Pinheiros', vehiclesServed: 54, vehiclesTotal: 100, sharePercent: 54, estimatedRevenue: 24000, trend: 'UP' },
 ];
 
 const DEMO_LEADS: PaginatedResponse<Lead> = {
@@ -366,9 +366,12 @@ const DEMO_LEADS: PaginatedResponse<Lead> = {
       cpfMasked: '***.***.111-**',
       vehicleModel: 'Ranger',
       vehiclePlate: 'EFG-7H89',
+      lastVisitAt: '2024-12-04',
       status: 'PERDIDO',
       segment: 'ABANDONO',
       riskScore: 87,
+      reason: 'Cliente fora da rede há mais de 12 meses',
+      suggestedAction: 'Oferecer revisão com 20% de desconto',
       daysSinceLastVisit: 420,
       warrantyStatus: 'EXPIRED',
       lastNpsScore: 5,
@@ -382,9 +385,12 @@ const DEMO_LEADS: PaginatedResponse<Lead> = {
       cpfMasked: '***.***.222-**',
       vehicleModel: 'EcoSport',
       vehiclePlate: 'XYZ-4M21',
+      lastVisitAt: '2025-08-26',
       status: 'EM_RISCO',
       segment: 'ESQUECIDO',
       riskScore: 72,
+      reason: 'Cliente atrasou janela de revisão',
+      suggestedAction: 'Convidar para revisão pré-vencimento',
       daysSinceLastVisit: 270,
       warrantyStatus: 'EXPIRING_SOON',
       lastNpsScore: 6,
@@ -398,9 +404,12 @@ const DEMO_LEADS: PaginatedResponse<Lead> = {
       cpfMasked: '***.***.333-**',
       vehicleModel: 'Bronco',
       vehiclePlate: 'NEW-2024',
+      lastVisitAt: '2026-04-23',
       status: 'NOVO',
       segment: 'FIEL',
       riskScore: 15,
+      reason: 'Cliente novo na rede',
+      suggestedAction: 'Boas-vindas e cadastro no programa',
       daysSinceLastVisit: 30,
       warrantyStatus: 'ACTIVE',
       lastNpsScore: 9,
@@ -414,9 +423,12 @@ const DEMO_LEADS: PaginatedResponse<Lead> = {
       cpfMasked: '***.***.444-**',
       vehicleModel: 'Mustang',
       vehiclePlate: 'GT5-0023',
+      lastVisitAt: '2026-03-24',
       status: 'RECUPERADO',
       segment: 'FIEL',
       riskScore: 8,
+      reason: 'Cliente recuperado por campanha',
+      suggestedAction: 'Acompanhar próxima revisão',
       daysSinceLastVisit: 60,
       warrantyStatus: 'ACTIVE',
       lastNpsScore: 10,
@@ -424,22 +436,18 @@ const DEMO_LEADS: PaginatedResponse<Lead> = {
       updatedAt: '2026-05-18T10:00:00-03:00',
     },
   ],
-  page: 0,
+  number: 0,
   size: 200,
   totalElements: 4,
   totalPages: 1,
 };
 
-const DEMO_SEGMENT_DISTRIBUTION: SegmentDistribution = {
-  totalCustomers: 1278,
-  computedAt: '2026-05-19T08:00:00-03:00',
-  buckets: [
-    { segment: 'FIEL', count: 420, percent: 32.8, avgTicket: 1200, avgNps: 9.1 },
-    { segment: 'ECONOMICO', count: 280, percent: 21.9, avgTicket: 580, avgNps: 7.4 },
-    { segment: 'ESQUECIDO', count: 308, percent: 24.1, avgTicket: 720, avgNps: 6.2 },
-    { segment: 'ABANDONO', count: 270, percent: 21.1, avgTicket: 320, avgNps: 4.8 },
-  ],
-};
+const DEMO_SEGMENT_DISTRIBUTION: SegmentDistribution = [
+  { segment: 'FIEL', count: 420, percent: 32.8, avgTicket: 1200, avgNps: 9.1 },
+  { segment: 'ECONOMICO', count: 280, percent: 21.9, avgTicket: 580, avgNps: 7.4 },
+  { segment: 'ESQUECIDO', count: 308, percent: 24.1, avgTicket: 720, avgNps: 6.2 },
+  { segment: 'ABANDONO', count: 270, percent: 21.1, avgTicket: 320, avgNps: 4.8 },
+];
 
 const DEMO_CUSTOMER_360: Customer360 = {
   customer: {

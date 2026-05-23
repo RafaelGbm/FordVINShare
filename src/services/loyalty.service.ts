@@ -19,7 +19,7 @@ export interface LoyaltyTransaction {
 export interface Reward {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   pointsCost: number;
   category?: string;
   imageUrl?: string;

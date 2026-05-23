@@ -27,6 +27,18 @@ export interface ApiProblem {
 }
 
 /**
+ * Success envelope wrapping every 2xx body returned by the Java backend.
+ * The `data` field carries the real payload; the response interceptor unwraps it
+ * so services keep reading `response.data` as the payload.
+ */
+interface SuccessEnvelope<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  timestamp?: string;
+}
+
+/**
  * Raised by the API client when the server returns a problem+json payload.
  * Use `error.problem` to read the structured details in screens.
  */
@@ -73,7 +85,30 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
 let refreshPromise: Promise<string> | null = null;
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Backend wraps every 2xx body in { success, data, message?, timestamp? }.
+    // Unwrap here so each service can keep reading `response.data` as the payload.
+    const body = response.data as unknown;
+    if (
+      body !== null &&
+      typeof body === 'object' &&
+      !Array.isArray(body) &&
+      'success' in body
+    ) {
+      const envelope = body as SuccessEnvelope<unknown>;
+      if (envelope.success === false) {
+        throw new ApiError({
+          title: envelope.message || 'Erro',
+          detail: envelope.message,
+          status: response.status,
+        });
+      }
+      if ('data' in envelope) {
+        response.data = envelope.data;
+      }
+    }
+    return response;
+  },
   async (error: AxiosError<ApiProblem>) => {
     const originalRequest = error.config as
       | (AxiosRequestConfig & { _retry?: boolean })

@@ -141,7 +141,7 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.heroGreeting}>
-          <Text style={styles.heroHello}>Olá, {me?.name?.split(' ')[0] ?? '—'}</Text>
+          <Text style={styles.heroHello}>Olá, {me?.fullName?.split(' ')[0] ?? '—'}</Text>
           <View style={styles.dealerTag}>
             <MaterialCommunityIcons name="store" size={12} color="#fff" />
             <Text style={styles.dealerText}>Ford SP Centro · Analista</Text>
@@ -358,11 +358,15 @@ export default function DashboardScreen() {
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.dealerName}>{d.dealershipName}</Text>
-                <Text style={styles.dealerRevenue}>{formatCurrency(d.estimatedRevenue)}</Text>
+                <Text style={styles.dealerName}>{d.name}</Text>
+                <Text style={styles.dealerRevenue}>
+                  {d.estimatedRevenue != null
+                    ? formatCurrency(d.estimatedRevenue)
+                    : `${d.vehiclesServed}/${d.vehiclesTotal} veículos`}
+                </Text>
               </View>
               <View style={styles.dealerRight}>
-                <Text style={styles.dealerShare}>{d.vinSharePercent.toFixed(0)}%</Text>
+                <Text style={styles.dealerShare}>{d.sharePercent.toFixed(0)}%</Text>
                 <View style={styles.dealerTrend}>
                   <MaterialCommunityIcons
                     name={

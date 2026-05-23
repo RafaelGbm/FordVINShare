@@ -34,10 +34,13 @@ export interface VinShareSeries {
 
 export interface DealershipVinShare {
   dealershipId: string;
-  dealershipName: string;
-  vinSharePercent: number;
-  estimatedRevenue: number;
-  trend: 'UP' | 'DOWN' | 'FLAT';
+  name: string;
+  vehiclesServed: number;
+  vehiclesTotal: number;
+  sharePercent: number;
+  // Backend doesn't send these yet — UI hides them when undefined.
+  trend?: 'UP' | 'DOWN' | 'FLAT';
+  estimatedRevenue?: number;
 }
 
 export interface NpsSummary {

@@ -15,7 +15,12 @@ import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
 import { useCreateLeadAction, useLeads } from '../../hooks/useLeads';
-import { Lead, LeadStatus } from '../../services/leads.service';
+import {
+  Lead,
+  LeadStatus,
+  daysSinceLastVisit,
+  deriveLeadStatus,
+} from '../../services/leads.service';
 import { ApiError } from '../../services/api';
 
 type UiStatus = 'all' | 'lost' | 'risk' | 'new' | 'recovered';
@@ -50,7 +55,8 @@ function avatarColor(id: string) {
   return AVATAR_COLORS[sum % AVATAR_COLORS.length];
 }
 
-function formatLastVisit(days: number) {
+function formatLastVisit(days: number | null) {
+  if (days == null) return 'Nunca';
   if (days < 30) return `${days} ${days === 1 ? 'dia' : 'dias'}`;
   const months = Math.floor(days / 30);
   return `${months} ${months === 1 ? 'mês' : 'meses'}`;
@@ -71,14 +77,14 @@ export default function LeadsScreen() {
       new: 0,
       recovered: 0,
     };
-    for (const l of leads) acc[API_TO_UI[l.status]]++;
+    for (const l of leads) acc[API_TO_UI[deriveLeadStatus(l)]]++;
     return acc;
   }, [leads]);
 
   const filteredLeads = useMemo(() => {
     const term = search.toLowerCase();
     return leads
-      .filter((l) => filter === 'all' || API_TO_UI[l.status] === filter)
+      .filter((l) => filter === 'all' || API_TO_UI[deriveLeadStatus(l)] === filter)
       .filter((l) => l.customerName.toLowerCase().includes(term));
   }, [leads, filter, search]);
 
@@ -210,10 +216,12 @@ export default function LeadsScreen() {
 }
 
 function LeadCard({ lead }: { lead: Lead }) {
-  const uiStatus = API_TO_UI[lead.status];
+  const uiStatus = API_TO_UI[deriveLeadStatus(lead)];
   const meta = STATUS_META[uiStatus];
   const initials = initialsFromName(lead.customerName);
   const color = avatarColor(lead.id);
+  const lastVisitDays = daysSinceLastVisit(lead);
+  const suggestion = lead.recommendedAction ?? lead.suggestedAction;
 
   const action = useCreateLeadAction(lead.id);
 
@@ -252,8 +260,10 @@ function LeadCard({ lead }: { lead: Lead }) {
   return (
     <TouchableOpacity
       style={styles.leadCard}
-      activeOpacity={0.9}
-      onPress={() => router.push(`/customers/${lead.customerId}` as any)}
+      activeOpacity={lead.customerId ? 0.9 : 1}
+      onPress={() => {
+        if (lead.customerId) router.push(`/customers/${lead.customerId}` as any);
+      }}
     >
       <View style={styles.leadHead}>
         <View style={[styles.leadAvatar, { backgroundColor: color }]}>
@@ -264,8 +274,12 @@ function LeadCard({ lead }: { lead: Lead }) {
           <View style={styles.leadMeta}>
             <MaterialCommunityIcons name="car" size={11} color={COLORS.gray} />
             <Text style={styles.leadMetaText}>{lead.vehicleModel}</Text>
-            <Text style={styles.leadMetaDot}>·</Text>
-            <Text style={styles.leadMetaText}>{lead.vehiclePlate}</Text>
+            {lead.vehiclePlate && (
+              <>
+                <Text style={styles.leadMetaDot}>·</Text>
+                <Text style={styles.leadMetaText}>{lead.vehiclePlate}</Text>
+              </>
+            )}
           </View>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
@@ -291,22 +305,24 @@ function LeadCard({ lead }: { lead: Lead }) {
       <View style={styles.leadStats}>
         <View style={styles.leadStat}>
           <MaterialCommunityIcons name="clock-outline" size={12} color={COLORS.gray} />
-          <Text style={styles.leadStatText}>{formatLastVisit(lead.daysSinceLastVisit)}</Text>
+          <Text style={styles.leadStatText}>{formatLastVisit(lastVisitDays)}</Text>
           <Text style={styles.leadStatSub}>sem visita</Text>
         </View>
-        <View style={styles.leadStatSep} />
-        <View style={styles.leadStat}>
-          <MaterialCommunityIcons name="star" size={12} color="#f5a623" />
-          <Text style={styles.leadStatText}>
-            NPS {lead.lastNpsScore ?? '—'}
-          </Text>
-        </View>
+        {lead.lastNpsScore != null && (
+          <>
+            <View style={styles.leadStatSep} />
+            <View style={styles.leadStat}>
+              <MaterialCommunityIcons name="star" size={12} color="#f5a623" />
+              <Text style={styles.leadStatText}>NPS {lead.lastNpsScore}</Text>
+            </View>
+          </>
+        )}
       </View>
 
-      {lead.recommendedAction && (
+      {suggestion && (
         <View style={styles.suggestion}>
           <MaterialCommunityIcons name="lightbulb-on-outline" size={13} color="#a36b00" />
-          <Text style={styles.suggestionText}>{lead.recommendedAction}</Text>
+          <Text style={styles.suggestionText}>{suggestion}</Text>
         </View>
       )}
 
@@ -329,13 +345,15 @@ function LeadCard({ lead }: { lead: Lead }) {
           <MaterialCommunityIcons name="message-text" size={16} color={COLORS.primary} />
           <Text style={styles.actionSecondaryText}>WhatsApp</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionIcon}
-          activeOpacity={0.85}
-          onPress={() => router.push(`/customers/${lead.customerId}` as any)}
-        >
-          <MaterialCommunityIcons name="account-details" size={18} color={COLORS.gray} />
-        </TouchableOpacity>
+        {lead.customerId && (
+          <TouchableOpacity
+            style={styles.actionIcon}
+            activeOpacity={0.85}
+            onPress={() => router.push(`/customers/${lead.customerId}` as any)}
+          >
+            <MaterialCommunityIcons name="account-details" size={18} color={COLORS.gray} />
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );

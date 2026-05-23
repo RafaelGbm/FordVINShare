@@ -289,7 +289,9 @@ export default function SchedulingScreen() {
                     <View style={styles.dealerMeta}>
                       <View style={styles.dealerMetaItem}>
                         <MaterialCommunityIcons name="map-marker" size={12} color={COLORS.gray} />
-                        <Text style={styles.dealerMetaText}>{d.distanceKm.toFixed(1)} km</Text>
+                        <Text style={styles.dealerMetaText}>
+                          {d.distanceKm != null ? `${d.distanceKm.toFixed(1)} km` : '—'}
+                        </Text>
                       </View>
                       <View style={styles.dealerMetaItem}>
                         <MaterialCommunityIcons name="clock-outline" size={12} color={COLORS.gray} />

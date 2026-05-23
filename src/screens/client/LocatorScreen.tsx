@@ -250,7 +250,9 @@ export default function LocatorScreen() {
                   </Text>
                 </View>
 
-                <Text style={styles.dealerDistance}>{d.distanceKm.toFixed(1)} km</Text>
+                <Text style={styles.dealerDistance}>
+                  {d.distanceKm != null ? `${d.distanceKm.toFixed(1)} km` : '—'}
+                </Text>
               </View>
 
               <View style={styles.dealerMeta}>
@@ -263,7 +265,7 @@ export default function LocatorScreen() {
               </View>
 
               <View style={styles.servicesRow}>
-                {d.services.map((s) => (
+                {d.services?.map((s) => (
                   <View key={s} style={styles.serviceChip}>
                     <Text style={styles.serviceChipText}>{SERVICE_LABEL[s]}</Text>
                   </View>

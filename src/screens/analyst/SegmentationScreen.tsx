@@ -46,8 +46,6 @@ function bucketsByOrder(buckets: SegmentBucket[]): SegmentBucket[] {
         segment: s,
         count: 0,
         percent: 0,
-        avgTicket: 0,
-        avgNps: 0,
       }
   );
 }
@@ -58,11 +56,14 @@ export default function SegmentationScreen() {
   const { data, isLoading, error, refetch, isRefetching } = useSegmentDistribution();
 
   const orderedBuckets = useMemo(
-    () => bucketsByOrder(data?.buckets ?? []),
-    [data?.buckets]
+    () => bucketsByOrder(data ?? []),
+    [data]
   );
 
-  const total = data?.totalCustomers ?? 0;
+  const total = useMemo(
+    () => orderedBuckets.reduce((acc, b) => acc + b.count, 0),
+    [orderedBuckets]
+  );
   const riskBucket = orderedBuckets.find((b) => b.segment === 'ESQUECIDO');
   const lostBucket = orderedBuckets.find((b) => b.segment === 'ABANDONO');
 
@@ -96,14 +97,6 @@ export default function SegmentationScreen() {
               <Text style={styles.totalValue}>{total.toLocaleString('pt-BR')}</Text>
               <Text style={styles.totalUnit}>clientes</Text>
             </View>
-            {data?.computedAt && (
-              <View style={styles.totalDelta}>
-                <MaterialCommunityIcons name="clock-outline" size={11} color="rgba(255,255,255,0.7)" />
-                <Text style={styles.totalDeltaText}>
-                  atualizado {new Date(data.computedAt).toLocaleDateString('pt-BR')}
-                </Text>
-              </View>
-            )}
           </View>
           <View style={styles.miniRings}>
             {orderedBuckets.map((b) => (
@@ -237,7 +230,9 @@ export default function SegmentationScreen() {
                           />
                         </View>
                         <Text style={styles.segCount}>
-                          {b.count} clientes · ticket médio R$ {b.avgTicket.toFixed(0)} · NPS {b.avgNps.toFixed(1)}
+                          {b.count} clientes
+                          {b.avgTicket != null && ` · ticket médio R$ ${b.avgTicket.toFixed(0)}`}
+                          {b.avgNps != null && ` · NPS ${b.avgNps.toFixed(1)}`}
                         </Text>
                       </View>
                     </View>

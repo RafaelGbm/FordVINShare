@@ -95,7 +95,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.heroGreeting}>
-          <Text style={styles.heroHello}>Olá, {me?.name?.split(' ')[0] ?? '—'}</Text>
+          <Text style={styles.heroHello}>Olá, {me?.fullName?.split(' ')[0] ?? '—'}</Text>
           <Text style={styles.heroWelcome}>Bem-vindo de volta ao Ford Connect</Text>
         </View>
       </View>

@@ -10,19 +10,47 @@ export type LeadActionChannel = 'WHATSAPP' | 'EMAIL' | 'SMS' | 'CALL';
 
 export interface Lead {
   id: string;
-  customerId: string;
   customerName: string;
-  cpfMasked: string;
   vehicleModel: string;
-  vehiclePlate: string;
-  status: LeadStatus;
+  lastVisitAt: string | null;
   segment: LeadSegment;
   riskScore: number;
-  daysSinceLastVisit: number;
-  warrantyStatus: WarrantyStatus;
-  lastNpsScore: number | null;
-  recommendedAction: string;
-  updatedAt: string;
+  reason: string;
+  suggestedAction: string;
+  // Backend doesn't send these yet; kept optional for forward-compat + demo fixtures.
+  customerId?: string;
+  cpfMasked?: string;
+  vehiclePlate?: string;
+  status?: LeadStatus;
+  daysSinceLastVisit?: number;
+  warrantyStatus?: WarrantyStatus;
+  lastNpsScore?: number | null;
+  recommendedAction?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Backend doesn't expose `status` directly nor honour `?status=` filters.
+ * Derive it from `riskScore` so the UI filters still work — same thresholds as the
+ * heuristic in README.md (Score > 80 → PERDIDO, > 60 → EM_RISCO, < 20 → RECUPERADO).
+ */
+export function deriveLeadStatus(lead: Pick<Lead, 'riskScore' | 'status'>): LeadStatus {
+  if (lead.status) return lead.status;
+  if (lead.riskScore >= 80) return 'PERDIDO';
+  if (lead.riskScore >= 60) return 'EM_RISCO';
+  if (lead.riskScore < 20) return 'RECUPERADO';
+  return 'NOVO';
+}
+
+/**
+ * Backend returns `lastVisitAt` as date (or null); UI wants days-since-last-visit.
+ * Returns null when the customer has never visited.
+ */
+export function daysSinceLastVisit(lead: Pick<Lead, 'lastVisitAt' | 'daysSinceLastVisit'>): number | null {
+  if (lead.daysSinceLastVisit != null) return lead.daysSinceLastVisit;
+  if (!lead.lastVisitAt) return null;
+  const ms = Date.now() - new Date(lead.lastVisitAt).getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
 }
 
 export interface ListLeadsParams {

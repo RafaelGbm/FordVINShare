@@ -36,13 +36,13 @@ export default function Index() {
       try {
         const me = await authService.getMe();
         if (cancelled) return;
-        const mappedRole = me.role === 'ANALYST' ? 'analyst' : 'client';
+        const mappedRole = me.role === 'ANALYST' || me.role === 'ADMIN' ? 'analyst' : 'client';
         useAuthStore.getState().setUser(
           {
             id: me.userId,
             email: me.email,
-            name: me.name,
-            phone: me.phone,
+            name: me.fullName ?? me.email,
+            phone: me.phone ?? undefined,
             role: mappedRole,
             created_at: me.createdAt,
           },

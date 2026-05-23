@@ -10,9 +10,9 @@ export interface Dealership {
   phone: string;
   lat: number;
   lng: number;
-  distanceKm: number;
+  distanceKm: number | null;
   openingHours: string;
-  services: ServiceType[];
+  services?: ServiceType[];
 }
 
 export interface AvailabilitySlot {

@@ -25,7 +25,7 @@ import { ApiError } from '../services/api';
 import { DemoRole, getDemoUser, seedDemoCache } from '../utils/demoMode';
 
 function mapApiRole(role: UserRole): 'client' | 'analyst' {
-  return role === 'ANALYST' ? 'analyst' : 'client';
+  return role === 'ANALYST' || role === 'ADMIN' ? 'analyst' : 'client';
 }
 
 export default function LoginScreen() {
@@ -47,8 +47,8 @@ export default function LoginScreen() {
       {
         id: me.userId,
         email: me.email,
-        name: me.name,
-        phone: me.phone,
+        name: me.fullName ?? me.email,
+        phone: me.phone ?? undefined,
         role: mapped,
         created_at: me.createdAt,
       },
@@ -73,8 +73,8 @@ export default function LoginScreen() {
         {
           id: me.userId,
           email: me.email,
-          name: me.name,
-          phone: me.phone,
+          name: me.fullName ?? me.email,
+          phone: me.phone ?? undefined,
           role,
           created_at: me.createdAt,
         },

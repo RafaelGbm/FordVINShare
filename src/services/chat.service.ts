@@ -25,7 +25,7 @@ export interface ChatMessage {
 
 export interface ChatSession {
   sessionId: string;
-  createdAt: string;
+  startedAt: string;
 }
 
 export const chatService = {

@@ -6,24 +6,29 @@ export interface SegmentBucket {
   segment: LeadSegment;
   count: number;
   percent: number;
-  avgTicket: number;
-  avgNps: number;
+  // Backend doesn't send these — left optional for future API growth + demo fixtures.
+  avgTicket?: number;
+  avgNps?: number;
 }
 
-export interface SegmentDistribution {
-  totalCustomers: number;
-  buckets: SegmentBucket[];
-  computedAt: string;
-}
+/**
+ * Backend returns the distribution as a flat array of buckets (no totals envelope).
+ * The screen derives `totalCustomers` from the sum of `count`s.
+ */
+export type SegmentDistribution = SegmentBucket[];
 
 export interface SegmentCustomer {
   customerId: string;
-  name: string;
-  cpfMasked: string;
   segment: LeadSegment;
   riskScore: number;
-  lastVisitAt: string | null;
-  estimatedLtv: number;
+  topFeatures: string[] | null;
+  modelVersion: string;
+  predictedAt: string;
+  // Backend doesn't send these yet — kept optional so the future "drill-down" UI compiles.
+  name?: string;
+  cpfMasked?: string;
+  lastVisitAt?: string | null;
+  estimatedLtv?: number;
 }
 
 export interface CustomerSegmentInfo {
