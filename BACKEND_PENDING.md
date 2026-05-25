@@ -8,6 +8,38 @@ O app já está adaptado pra rodar com o que o back devolve hoje (UI cai pra fal
 
 ---
 
+## ✅ Status: respondido pelo back em 2026-05-24
+
+Time do back acusou recebimento e está corrigindo. Documento espelho em
+[`docs/BACKEND_RESPONSE_2026-05-24.md`](docs/BACKEND_RESPONSE_2026-05-24.md).
+
+**Deploy previsto:** entre 2026-05-26 e 2026-05-28 (envelope universal,
+shapes de Lead/Segment/Analytics, 5 endpoints quebrados, `expiresIn=900`,
+`HH:mm` em availability).
+
+**Validar pós-deploy com:** [`scripts/verify-backend.sh`](scripts/verify-backend.sh).
+
+| Item desta lista | Status |
+|---|---|
+| `/me/services` 500 | 🟢 Back vai mover de `/services/me` → `/me/services` |
+| `/me/appointments` 500 | 🟢 Back vai mover de `/appointments/me` → `/me/appointments` |
+| `/analytics/vin-share/series` 500 | 🟢 ClassCastException, já corrigido |
+| `/analytics/nps` 500 | 🟢 Será implementado (`NpsSummary` no app já está no shape novo) |
+| `/api/v1/v3/api-docs` 500 | 🟢 Path volta pro default springdoc |
+| Envelope `{success, data, ...}` | 🟢 Vai ser documentado no contrato (mantém como está) |
+| `/me` fullName null | 🟢 Migration nova adiciona `display_name` em users |
+| Lead minimalista | 🟢 Vai enriquecer DTO (cpfMasked, vehiclePlate, status server-side, etc.) |
+| Filtro `?status=` em `/leads` | 🟢 Vai funcionar server-side |
+| `/segments/distribution` shape | 🟡 Vai mudar pra envelope; service no app **já normaliza** as duas formas |
+| `/segments/{segment}/customers` shape | 🟡 Vai mudar pra perfil real; tela ainda não consome |
+| `/analytics/vin-share/by-dealership` campos | 🟢 Vai ganhar `estimatedRevenue` + `trend` |
+| `expiresIn: 300` | 🟢 Vai subir pra 900 via env var no Azure |
+| `AvailabilitySlot.time` | 🔵 Cosmético, vai vir `"HH:mm"` |
+
+Legenda: 🟢 já adaptado defensivamente · 🟡 mudança de shape (já preparado pra aceitar) · 🔵 cosmético sem code change.
+
+---
+
 ## 🔴 Bugs (endpoints retornando 500)
 
 | Endpoint | Status | O que quebra no app |
