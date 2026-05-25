@@ -1,213 +1,195 @@
 # Ford VIN Share
 
-Nomes e RM’S
+**Nomes e RM's**
 
-Vinicius Monteiro Araújo - 555088
-Guilherme Almeida - 555180
-Rafael Duarte de Freitas - 558644
-Rafael Gaspar Bragança Martins - 557228
-Luiz Gustavo da Silva - 558358
+- Vinicius Monteiro Araújo — 555088
+- Guilherme Almeida — 555180
+- Rafael Duarte de Freitas — 558644
+- Rafael Gaspar Bragança Martins — 557228
+- Luiz Gustavo da Silva — 558358
 
-App mobile e web para Ford que demonstra um sistema integrado de garantia, agendamento de serviços e análise de dados de concessionárias. O projeto é split em dois fluxos principais: **Cliente** e **Analista**.
+App mobile (iOS, Android, Web) que cobre dois públicos da Ford a partir da
+mesma base de código: **Cliente** (acompanhar garantia, agendar serviços,
+encontrar concessionária, pontos, chat IA) e **Analista** (KPIs de VIN Share,
+leads em risco, segmentação preditiva, Visão 360 do cliente).
 
-## 📋 Estrutura do Projeto
+O app **consome um backend Java/Spring Boot** hospedado no Azure
+(`https://vinshare-api.azurewebsites.net/api/v1`, PostgreSQL). Sem Supabase,
+sem mock — quando o back está fora, o app pode rodar em **modo demo**
+(flag de ambiente, com fixtures realistas pré-populadas no React Query).
+
+## Stack
+
+- **Expo SDK 54** + React 19 + TypeScript
+- **expo-router** (file-based routing em `app/`)
+- **React Query** (cache, retry, refetch, persistência offline)
+- **Zustand** (mínimo — só `user`/`role` da sessão atual)
+- **axios** com interceptors (Bearer JWT, refresh transparente no 401)
+- **expo-secure-store** para os tokens (LGPD — JWT nunca em AsyncStorage)
+- **expo-notifications** + deep links `fordapp://`
+- **expo-location** com fallback para São Paulo
+
+## Estrutura
 
 ```
 FordVINShare/
+├── app/                          # expo-router (file-based routes)
+│   ├── _layout.tsx               # Stack root + Providers (Query, Push, Deep Links)
+│   ├── index.tsx                 # Bootstrap: auto-login via SecureStore
+│   ├── (client)/                 # Tabs do cliente (home, scheduling, locator, points, chat, profile)
+│   ├── (analyst)/                # Tabs do analista (dashboard, leads, segmentation)
+│   ├── appointments.tsx          # "Meus agendamentos"
+│   ├── customers/[customerId].tsx
+│   ├── nps/[serviceId].tsx
+│   └── odometer/[vehicleId].tsx
 ├── src/
-│   ├── screens/
-│   │   ├── LoginScreen.tsx          # Tela de login com toggle Cliente/Analista
-│   │   ├── client/                   # Fluxo do cliente
-│   │   │   ├── HomeScreen.tsx
-│   │   │   ├── SchedulingScreen.tsx
-│   │   │   ├── LocatorScreen.tsx
-│   │   │   ├── PointsScreen.tsx
-│   │   │   ├── ChatScreen.tsx
-│   │   │   └── ProfileScreen.tsx
-│   │   └── analyst/                  # Fluxo do analista
-│   │       ├── DashboardScreen.tsx
-│   │       ├── LeadsScreen.tsx
-│   │       └── SegmentationScreen.tsx
-│   ├── navigation/
-│   │   └── types.ts                 # Tipos de navegação
-│   ├── services/
-│   │   └── supabase.ts              # Queries Supabase
-│   ├── types/
-│   │   └── index.ts                 # Tipos TypeScript
-│   ├── utils/
-│   │   ├── store.ts                 # Zustand store + mock data
-│   │   └── helpers.ts               # Funções utilitárias
-│   ├── constants/
-│   │   └── index.ts                 # Cores, constantes
-│   └── styles/
-├── App.tsx                           # Arquivo raiz com navegação
-├── app.json                          # Configuração Expo
-├── .env.example                      # Variáveis de ambiente
+│   ├── components/               # FordLogo, StateBox
+│   ├── config/env.ts             # EXPO_PUBLIC_API_URL, EXPO_PUBLIC_DEMO_MODE
+│   ├── hooks/                    # 17 hooks React Query + utilidades
+│   ├── screens/                  # 13 telas (split client/analyst)
+│   ├── services/                 # 13 services da API + api.ts (axios) + secureStorage + queryPersist
+│   ├── types/index.ts            # Tipos compartilhados (User, UserRole)
+│   └── utils/                    # store.ts (Zustand), demoMode.ts, deepLinks.ts, pushNotifications.ts
+├── scripts/verify-backend.sh     # Smoke test contra o back real
+├── app.json                      # Configuração Expo
+├── eas.json                      # Perfis de build (dev/preview/production)
 └── package.json
 ```
 
-## 🚀 Setup Inicial
-
-### 1. Instalar dependências
+## Setup
 
 ```bash
+# 1. Dependências
 npm install
+
+# 2. Variáveis de ambiente
+cp .env.example .env
+# Edite:
+#   EXPO_PUBLIC_API_URL=https://vinshare-api.azurewebsites.net/api/v1
+#   EXPO_PUBLIC_DEMO_MODE=false      (true se quiser rodar sem o back)
+
+# 3. Rodar
+npm start          # 'a' Android, 'i' iOS, 'w' Web
 ```
 
-### 2. Configurar variáveis de ambiente
+### Modo demonstração (sem backend)
 
-Copie `.env.example` para `.env.local` e preencha:
+Setar `EXPO_PUBLIC_DEMO_MODE=true` no `.env`. A LoginScreen passa a exibir um
+painel com dois botões:
 
-```bash
-cp .env.example .env.local
-```
+- **Cliente** → entra como João Silva (Ranger 2023), com veículos,
+  agendamentos, pontos, chat e NPS pré-preenchidos
+- **Analista** → entra como Ana Oliveira, com KPIs, leads, distribuição de
+  segmentos e Visão 360 já populados
 
-Adicione suas chaves:
-- `EXPO_PUBLIC_SUPABASE_URL` - URL do seu projeto Supabase
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Chave anônima do Supabase
-- `EXPO_PUBLIC_CLAUDE_API_KEY` - Chave da API Claude (para chatbot)
+O React Query é semeado com fixtures (`src/utils/demoMode.ts`) antes das
+telas montarem. Mutations (criar agendamento, resgatar prêmio, enviar
+mensagem no chat) ainda tentam bater na API real e falham — o demo é só
+pra apresentar navegação e estados visuais.
 
-### 3. Rodar o app
-
-```bash
-npm start
-```
-
-Então escolha a plataforma:
-- **i** - iOS
-- **a** - Android
-- **w** - Web
-
-## 📱 Fluxos do App
+## Fluxos do app
 
 ### Cliente
-- **Home**: Status da garantia, alertas de revisão, últimos serviços
-- **Agendar**: Selecionar tipo de serviço, concessionária e data
-- **Localizador**: Mapa com concessionárias próximas + filtros
-- **Pontos**: Extrato de pontos acumulados e tabela de resgate
-- **Chat (IA)**: Assistente inteligente com Claude API
-- **Perfil**: Dados do cliente e preferências
+- **Home**: status da garantia (`/me/vehicles` + `/vehicles/{id}/warranty`),
+  alertas de quilometragem, últimos serviços, banner de NPS pendente
+- **Agendar**: stepper de 3 passos integrado a `/service-types`,
+  `/dealerships`, `/dealerships/{id}/availability` e `POST /appointments`
+- **Localizador**: geolocalização real (`expo-location`) + filtros, com
+  fallback automático pro centro de São Paulo
+- **Pontos**: saldo + extrato + catálogo de rewards + resgate
+- **Chat (Ford AI)**: sessão + histórico de mensagens; o backend integra
+  com Claude API server-side, app só consome
+- **Perfil**: `/me`, lista de veículos, atualização de odômetro, logout
 
 ### Analista
-- **Dashboard**: KPIs, gráficos VIN Share, top concessionárias
-- **Leads**: Lista de clientes segmentada por urgência ("Em Risco", "Perdido", "Novo")
-- **Segmentação**: Análise de distribuição de clientes por segmento
-- **Detalhes do Cliente**: Visão 360 com histórico completo
+- **Dashboard**: KPIs (veículos em garantia, taxa VIN Share, receita
+  estimada, leads em risco) + gráfico VIN Share + ranking de concessionárias
+- **Leads**: filtros por status (`NOVO`/`EM_RISCO`/`PERDIDO`/`RECUPERADO`)
+  + score de risco + ações de WhatsApp/Ligação
+- **Segmentação**: donut + funil de fidelização (`FIEL`/`ECONOMICO`/
+  `ESQUECIDO`/`ABANDONO`)
+- **Visão 360**: LTV, histórico, timeline detalhada, check-in e conclusão
+  de atendimento
 
-## 🎨 Design System
+## Identidade visual
 
-**Cores Ford:**
-- Primária: `#003087` (Azul Ford)
-- Secundária: `#1a73e8`
-- Sucesso: `#34a853`
-- Alerta: `#fbbc04`
-- Erro: `#ea4335`
+| Token | Valor |
+|---|---|
+| Primária | `#003087` (Ford Blue) |
+| Sucesso | `#1e8e3e` |
+| Warning | `#f5a623` |
+| Erro | `#ea4335` |
+| Background | `#f5f5f7` |
+| Cards | `borderRadius: 14-20`, sombra `opacity: 0.04-0.06` |
+| Hero | Fundo Ford Blue + blob decorativo + card branco overlay (`borderTopRadius: 28`) |
+| Splash/Icon | Logo oval Ford sobre fundo `#003087` |
 
-## 🔐 Autenticação
+## Autenticação
 
-Atualmente usa **mock data** para demonstração:
-- Cliente 1: João Silva (Fiesta 2022 - Garantia Ativa)
-- Cliente 2: Maria Santos (EcoSport 2021 - Garantia Vencida)
-- Analista: Ana Oliveira (Concessionária SP)
+`POST /auth/login` retorna `{ accessToken, refreshToken, role, userId }`.
+Tokens vão pro SecureStore; o interceptor do axios anexa
+`Authorization: Bearer …` em toda chamada. Em `401`, dispara `POST
+/auth/refresh` uma vez (deduplicado entre requests concorrentes) e refaz
+a request original. Se o refresh falha, limpa SecureStore e redireciona
+pro `/`.
 
-No fluxo de login, escolha um perfil e o app simula autenticação.
+Role lida do JWT decide se `app/index.tsx` redireciona pra `(client)` ou
+`(analyst)`. ADMIN é tratado como analyst.
 
-## 💾 Estado da Aplicação
+## Modo offline
 
-Usa **Zustand** para gerenciar estado global:
-- Dados do usuário autenticado
-- Role (cliente/analista)
-- Veículos do cliente
-- Loading states
+`PersistQueryClientProvider` com `AsyncStorage` e allowlist em
+`src/services/queryPersist.ts`. Persiste apenas leitura de baixo risco:
 
-## 📊 IA Preditiva
+- `vehicles.list`
+- `vehicles.warranty`
+- `vehicles.alerts`
+- `services.mine`
 
-A segmentação de clientes usa um algoritmo de score baseado em regras:
+`gcTime: 24h`. `QUERY_CACHE_BUSTER` invalida o cache quando o shape evolui.
 
+## Algoritmo de segmentação (backend)
+
+O score de risco (0–100) é calculado server-side. Heurística:
+
+| Critério | Peso |
+|---|---|
+| Última visita > 12 meses | +30 |
+| Garantia vencendo < 60 dias | +20 |
+| NPS < 7 | +25 |
+| Km próximo de revisão | +15 |
+| 3+ serviços último ano | −20 |
+| NPS ≥ 9 | −10 |
+
+Faixas que viram `status` no lead:
+
+- score ≥ 80 → `PERDIDO`
+- score ≥ 60 → `EM_RISCO`
+- score < 20 → `RECUPERADO`
+- demais → `NOVO`
+
+## Qualidade
+
+| Checa | Comando |
+|---|---|
+| Type check | `npx tsc --noEmit` |
+| Lint | `npm run lint` |
+| Testes | `npm test` |
+| Validar back real | `EMAIL=… PASSWORD=… bash scripts/verify-backend.sh` |
+
+Testes cobrem `parseDeepLink`, `shouldPersistQuery`, `ApiError`,
+`<StateBox />`.
+
+## Build (EAS)
+
+Perfis em `eas.json` (`development` / `preview` / `production`). Antes
+de subir builds standalone, criar projeto em https://expo.dev e colar o
+`projectId` em `app.json` (`extra.eas.projectId`).
+
+```bash
+npm i -g eas-cli
+eas login
+eas build --profile preview --platform all
+eas submit --platform android   # depois de production
+eas submit --platform ios
 ```
-Score = 
-  +30 se última visita > 12 meses
-  +20 se garantia vencendo < 60 dias
-  +25 se NPS < 7
-  +15 se km próximo de revisão
-  -20 se 3+ serviços último ano
-  -10 se NPS >= 9
-
-Score > 80 → "Perdido"
-Score > 60 → "Em Risco"
-Score < 20 → "Fiel"
-```
-
-## 🗄️ Supabase
-
-O app espera as seguintes tabelas no Supabase:
-
-- `users` - Dados dos clientes e analistas
-- `vehicles` - Veículos registrados
-- `services` - Histórico de serviços
-- `dealers` - Concessionárias parceiras
-- `nps` - Avaliações NPS pós-serviço
-- `points` - Saldo de pontos por cliente
-- `leads` - Classificação de leads e risco
-
-Veja `.env.example` para configurar a conexão.
-
-## 🤖 Claude API
-
-O chat de suporte integra a Claude API para respostas inteligentes:
-- Contexto do cliente injetado (modelo, garantia, etc.)
-- Respostas personalizadas sobre serviços, agendamento, peças
-- Recomendações baseadas em histórico
-
-## 📦 Dependências Principais
-
-- **expo** - Framework React Native
-- **@react-navigation** - Navegação com tab + stack
-- **@supabase/supabase-js** - Backend as a Service
-- **zustand** - State management
-- **react-native-reanimated** - Animações
-- **expo-notifications** - Notificações push
-- **expo-location** - Geolocalização
-
-## 🚧 Roadmap
-
-- [x] Estrutura base com Expo + TypeScript
-- [x] Sistema de navegação (cliente + analista)
-- [x] Login com toggle para demos
-- [x] Home screen com status de garantia
-- [x] Dashboard do analista com KPIs
-- [ ] Integração real com Supabase
-- [ ] Dataset fake com 500 clientes
-- [ ] Mapa com concessionárias
-- [ ] Chat IA com Claude API
-- [ ] Notificações push
-- [ ] Modo offline com AsyncStorage
-- [ ] Animações com Reanimated
-
-## 👥 Personas
-
-### Cliente
-Usuário que possui um veículo Ford e quer:
-- Acompanhar sua garantia
-- Agendar revisões
-- Encontrar concessionárias próximas
-- Acumular pontos de fidelidade
-- Obter suporte via IA
-
-### Analista / Concessionária
-Usuário que gerencia uma concessionária Ford e quer:
-- Ver métricas de VIN Share
-- Identificar leads para resgate
-- Acompanhar evolução mensal
-- Segmentar clientes por risco
-- Tomar ações proativas
-
-## 📞 Contato & Contribuição
-
-Desenvolvido por Rafael Gaspar Martins
-- Email: rafaelgasparmartins@icloud.com
-- GitHub: @RafaelGbm
-
----
-
-**Status:** Conceito em desenvolvimento | **Versão:** 0.1.0
