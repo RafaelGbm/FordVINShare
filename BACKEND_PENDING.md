@@ -8,35 +8,41 @@ O app já está adaptado pra rodar com o que o back devolve hoje (UI cai pra fal
 
 ---
 
-## ✅ Status: respondido pelo back em 2026-05-24
+## ✅ Status: 11/14 deployado pelo back em 2026-05-24 (deploy antecipado!)
 
-Time do back acusou recebimento e está corrigindo. Documento espelho em
+Time do back acusou recebimento, e o deploy aconteceu antes do previsto.
+Documento espelho da resposta deles em
 [`docs/BACKEND_RESPONSE_2026-05-24.md`](docs/BACKEND_RESPONSE_2026-05-24.md).
 
-**Deploy previsto:** entre 2026-05-26 e 2026-05-28 (envelope universal,
-shapes de Lead/Segment/Analytics, 5 endpoints quebrados, `expiresIn=900`,
-`HH:mm` em availability).
-
-**Validar pós-deploy com:** [`scripts/verify-backend.sh`](scripts/verify-backend.sh).
+**Validado em 2026-05-24** (rodar `scripts/verify-backend.sh` quando os
+itens 🔴 abaixo caírem).
 
 | Item desta lista | Status |
 |---|---|
-| `/me/services` 500 | 🟢 Back vai mover de `/services/me` → `/me/services` |
-| `/me/appointments` 500 | 🟢 Back vai mover de `/appointments/me` → `/me/appointments` |
-| `/analytics/vin-share/series` 500 | 🟢 ClassCastException, já corrigido |
-| `/analytics/nps` 500 | 🟢 Será implementado (`NpsSummary` no app já está no shape novo) |
-| `/api/v1/v3/api-docs` 500 | 🟢 Path volta pro default springdoc |
-| Envelope `{success, data, ...}` | 🟢 Vai ser documentado no contrato (mantém como está) |
-| `/me` fullName null | 🟢 Migration nova adiciona `display_name` em users |
-| Lead minimalista | 🟢 Vai enriquecer DTO (cpfMasked, vehiclePlate, status server-side, etc.) |
-| Filtro `?status=` em `/leads` | 🟢 Vai funcionar server-side |
-| `/segments/distribution` shape | 🟡 Vai mudar pra envelope; service no app **já normaliza** as duas formas |
-| `/segments/{segment}/customers` shape | 🟡 Vai mudar pra perfil real; tela ainda não consome |
-| `/analytics/vin-share/by-dealership` campos | 🟢 Vai ganhar `estimatedRevenue` + `trend` |
-| `expiresIn: 300` | 🟢 Vai subir pra 900 via env var no Azure |
-| `AvailabilitySlot.time` | 🔵 Cosmético, vai vir `"HH:mm"` |
+| `/me/services` 500 | ✅ **200** (mudou de `/services/me` → `/me/services`) |
+| `/me/appointments` 500 | ✅ **200** (mudou de `/appointments/me` → `/me/appointments`) |
+| `/analytics/vin-share/series` 500 | 🔴 **ainda 500** — ClassCastException não entrou no deploy |
+| `/analytics/nps` 500 | ✅ **200** com shape exato do contrato |
+| `/api/v1/v3/api-docs` 500 | ✅ **200** (OpenAPI pronto pra `openapi-typescript`) |
+| Envelope `{success, data, ...}` | ✅ Documentado no contrato |
+| `/me` fullName null | 🟡 OK pra CLIENT; **ADMIN ainda `null`** (migration `display_name` em `users` não aplicada) |
+| Lead minimalista | ✅ Todos os 8 campos novos shipados (`cpfMasked`, `vehiclePlate`, `status`, `warrantyStatus`, `daysSinceLastVisit`, `customerId`, `updatedAt`, `lastNpsScore`) |
+| Filtro `?status=` em `/leads` | ✅ Funcionando server-side |
+| `/segments/distribution` shape | ✅ Envelope com `avgTicket`/`avgNps` por bucket |
+| `/segments/{segment}/customers` shape | ✅ Perfil real `{name, cpfMasked, lastVisitAt, estimatedLtv, ...}` |
+| `/analytics/vin-share/by-dealership` campos | ✅ `estimatedRevenue` + `trend` presentes |
+| `expiresIn: 300` | 🔴 **ainda 300** — env var `JWT_ACCESS_MIN=15` no Azure não foi flipped |
+| `AvailabilitySlot.time` | ✅ `"08:00"` (sem segundos) |
 
-Legenda: 🟢 já adaptado defensivamente · 🟡 mudança de shape (já preparado pra aceitar) · 🔵 cosmético sem code change.
+Legenda: ✅ deployado e funcionando · 🟡 deployado parcialmente · 🔴 falta.
+
+### 🔴 Itens remanescentes (3) — pingar o back
+
+1. **`JWT_ACCESS_MIN=15` no Azure** — env var, não-deploy. Suposto ser imediato.
+2. **`/analytics/vin-share/series` ainda 500** — ClassCastException foi corrigido no code mas pode não ter entrado nesse deploy.
+3. **Migration `display_name` em `users`** — sem isso, ADMIN/ANALYST recebem `fullName: null` em `/me`.
+
+Quando os 3 caírem: rodar `scripts/verify-backend.sh` pra validação completa, e fazer o cleanup unificado no app (remover `deriveLeadStatus`/`daysSinceLastVisit` client-side, simplificar `segmentsService.getDistribution`, gerar types via OpenAPI).
 
 ---
 
