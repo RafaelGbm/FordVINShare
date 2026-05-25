@@ -442,12 +442,16 @@ const DEMO_LEADS: PaginatedResponse<Lead> = {
   totalPages: 1,
 };
 
-const DEMO_SEGMENT_DISTRIBUTION: SegmentDistribution = [
-  { segment: 'FIEL', count: 420, percent: 32.8, avgTicket: 1200, avgNps: 9.1 },
-  { segment: 'ECONOMICO', count: 280, percent: 21.9, avgTicket: 580, avgNps: 7.4 },
-  { segment: 'ESQUECIDO', count: 308, percent: 24.1, avgTicket: 720, avgNps: 6.2 },
-  { segment: 'ABANDONO', count: 270, percent: 21.1, avgTicket: 320, avgNps: 4.8 },
-];
+const DEMO_SEGMENT_DISTRIBUTION: SegmentDistribution = {
+  totalCustomers: 1278,
+  computedAt: '2026-05-19T08:00:00-03:00',
+  buckets: [
+    { segment: 'FIEL', count: 420, percent: 32.8, avgTicket: 1200, avgNps: 9.1 },
+    { segment: 'ECONOMICO', count: 280, percent: 21.9, avgTicket: 580, avgNps: 7.4 },
+    { segment: 'ESQUECIDO', count: 308, percent: 24.1, avgTicket: 720, avgNps: 6.2 },
+    { segment: 'ABANDONO', count: 270, percent: 21.1, avgTicket: 320, avgNps: 4.8 },
+  ],
+};
 
 const DEMO_CUSTOMER_360: Customer360 = {
   customer: {

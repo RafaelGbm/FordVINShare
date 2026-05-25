@@ -56,14 +56,11 @@ export default function SegmentationScreen() {
   const { data, isLoading, error, refetch, isRefetching } = useSegmentDistribution();
 
   const orderedBuckets = useMemo(
-    () => bucketsByOrder(data ?? []),
-    [data]
+    () => bucketsByOrder(data?.buckets ?? []),
+    [data?.buckets]
   );
 
-  const total = useMemo(
-    () => orderedBuckets.reduce((acc, b) => acc + b.count, 0),
-    [orderedBuckets]
-  );
+  const total = data?.totalCustomers ?? 0;
   const riskBucket = orderedBuckets.find((b) => b.segment === 'ESQUECIDO');
   const lostBucket = orderedBuckets.find((b) => b.segment === 'ABANDONO');
 
@@ -97,6 +94,14 @@ export default function SegmentationScreen() {
               <Text style={styles.totalValue}>{total.toLocaleString('pt-BR')}</Text>
               <Text style={styles.totalUnit}>clientes</Text>
             </View>
+            {data?.computedAt && (
+              <View style={styles.totalDelta}>
+                <MaterialCommunityIcons name="clock-outline" size={11} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.totalDeltaText}>
+                  atualizado {new Date(data.computedAt).toLocaleDateString('pt-BR')}
+                </Text>
+              </View>
+            )}
           </View>
           <View style={styles.miniRings}>
             {orderedBuckets.map((b) => (

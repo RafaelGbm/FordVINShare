@@ -222,6 +222,9 @@ function LeadCard({ lead }: { lead: Lead }) {
   const color = avatarColor(lead.id);
   const lastVisitDays = daysSinceLastVisit(lead);
   const suggestion = lead.recommendedAction ?? lead.suggestedAction;
+  // Backend confirmed lead.id === customer.id today; the explicit customerId field
+  // ships in a future deploy and will take precedence here when it arrives.
+  const targetCustomerId = lead.customerId ?? lead.id;
 
   const action = useCreateLeadAction(lead.id);
 
@@ -260,10 +263,8 @@ function LeadCard({ lead }: { lead: Lead }) {
   return (
     <TouchableOpacity
       style={styles.leadCard}
-      activeOpacity={lead.customerId ? 0.9 : 1}
-      onPress={() => {
-        if (lead.customerId) router.push(`/customers/${lead.customerId}` as any);
-      }}
+      activeOpacity={0.9}
+      onPress={() => router.push(`/customers/${targetCustomerId}` as any)}
     >
       <View style={styles.leadHead}>
         <View style={[styles.leadAvatar, { backgroundColor: color }]}>
@@ -345,15 +346,13 @@ function LeadCard({ lead }: { lead: Lead }) {
           <MaterialCommunityIcons name="message-text" size={16} color={COLORS.primary} />
           <Text style={styles.actionSecondaryText}>WhatsApp</Text>
         </TouchableOpacity>
-        {lead.customerId && (
-          <TouchableOpacity
-            style={styles.actionIcon}
-            activeOpacity={0.85}
-            onPress={() => router.push(`/customers/${lead.customerId}` as any)}
-          >
-            <MaterialCommunityIcons name="account-details" size={18} color={COLORS.gray} />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.actionIcon}
+          activeOpacity={0.85}
+          onPress={() => router.push(`/customers/${targetCustomerId}` as any)}
+        >
+          <MaterialCommunityIcons name="account-details" size={18} color={COLORS.gray} />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );

@@ -6,16 +6,16 @@ export interface SegmentBucket {
   segment: LeadSegment;
   count: number;
   percent: number;
-  // Backend doesn't send these — left optional for future API growth + demo fixtures.
+  // Backend ships these in the future envelope deploy; absent in the current flat array.
   avgTicket?: number;
   avgNps?: number;
 }
 
-/**
- * Backend returns the distribution as a flat array of buckets (no totals envelope).
- * The screen derives `totalCustomers` from the sum of `count`s.
- */
-export type SegmentDistribution = SegmentBucket[];
+export interface SegmentDistribution {
+  totalCustomers: number;
+  buckets: SegmentBucket[];
+  computedAt?: string;
+}
 
 export interface SegmentCustomer {
   customerId: string;
@@ -40,8 +40,18 @@ export interface CustomerSegmentInfo {
 }
 
 export const segmentsService = {
+  // Backend ships a flat array today and the envelope after the 2026-05-28 deploy.
+  // Normalize both into the envelope so the screen has one shape to consume.
   async getDistribution(): Promise<SegmentDistribution> {
-    const { data } = await api.get<SegmentDistribution>('/segments/distribution');
+    const { data } = await api.get<SegmentDistribution | SegmentBucket[]>(
+      '/segments/distribution'
+    );
+    if (Array.isArray(data)) {
+      return {
+        totalCustomers: data.reduce((acc, b) => acc + b.count, 0),
+        buckets: data,
+      };
+    }
     return data;
   },
 

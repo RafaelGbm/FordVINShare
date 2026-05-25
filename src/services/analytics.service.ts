@@ -44,11 +44,13 @@ export interface DealershipVinShare {
 }
 
 export interface NpsSummary {
-  score: number;
-  responses: number;
-  detractors: number;
-  passives: number;
+  totalResponses: number;
+  averageScore: number;
+  npsScore: number;
   promoters: number;
+  passives: number;
+  detractors: number;
+  computedAt: string;
 }
 
 export const analyticsService = {
@@ -80,7 +82,7 @@ export const analyticsService = {
     return data;
   },
 
-  async getNps(params: { dealershipId?: string; from?: string; to?: string } = {}): Promise<NpsSummary> {
+  async getNps(params: { monthsBack?: number } = {}): Promise<NpsSummary> {
     const { data } = await api.get<NpsSummary>('/analytics/nps', { params });
     return data;
   },
