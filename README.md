@@ -1,5 +1,13 @@
 # Ford VIN Share
 
+Nomes e RM’S
+
+Vinicius Monteiro Araújo - 555088
+Guilherme Almeida - 555180
+Rafael Duarte de Freitas - 558644
+Rafael Gaspar Bragança Martins - 557228
+Luiz Gustavo da Silva - 558358
+
 App mobile e web para Ford que demonstra um sistema integrado de garantia, agendamento de serviços e análise de dados de concessionárias. O projeto é split em dois fluxos principais: **Cliente** e **Analista**.
 
 ## 📋 Estrutura do Projeto
