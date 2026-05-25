@@ -6,29 +6,24 @@ export interface SegmentBucket {
   segment: LeadSegment;
   count: number;
   percent: number;
-  // Backend ships these in the future envelope deploy; absent in the current flat array.
-  avgTicket?: number;
-  avgNps?: number;
+  avgTicket: number;
+  avgNps: number;
 }
 
 export interface SegmentDistribution {
   totalCustomers: number;
   buckets: SegmentBucket[];
-  computedAt?: string;
+  computedAt: string;
 }
 
 export interface SegmentCustomer {
   customerId: string;
+  name: string;
+  cpfMasked: string;
   segment: LeadSegment;
   riskScore: number;
-  topFeatures: string[] | null;
-  modelVersion: string;
-  predictedAt: string;
-  // Backend doesn't send these yet — kept optional so the future "drill-down" UI compiles.
-  name?: string;
-  cpfMasked?: string;
-  lastVisitAt?: string | null;
-  estimatedLtv?: number;
+  lastVisitAt: string | null;
+  estimatedLtv: number;
 }
 
 export interface CustomerSegmentInfo {
@@ -40,18 +35,8 @@ export interface CustomerSegmentInfo {
 }
 
 export const segmentsService = {
-  // Backend ships a flat array today and the envelope after the 2026-05-28 deploy.
-  // Normalize both into the envelope so the screen has one shape to consume.
   async getDistribution(): Promise<SegmentDistribution> {
-    const { data } = await api.get<SegmentDistribution | SegmentBucket[]>(
-      '/segments/distribution'
-    );
-    if (Array.isArray(data)) {
-      return {
-        totalCustomers: data.reduce((acc, b) => acc + b.count, 0),
-        buckets: data,
-      };
-    }
+    const { data } = await api.get<SegmentDistribution>('/segments/distribution');
     return data;
   },
 

@@ -359,11 +359,7 @@ export default function DashboardScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.dealerName}>{d.name}</Text>
-                <Text style={styles.dealerRevenue}>
-                  {d.estimatedRevenue != null
-                    ? formatCurrency(d.estimatedRevenue)
-                    : `${d.vehiclesServed}/${d.vehiclesTotal} veículos`}
-                </Text>
+                <Text style={styles.dealerRevenue}>{formatCurrency(d.estimatedRevenue)}</Text>
               </View>
               <View style={styles.dealerRight}>
                 <Text style={styles.dealerShare}>{d.sharePercent.toFixed(0)}%</Text>

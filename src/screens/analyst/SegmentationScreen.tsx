@@ -46,6 +46,8 @@ function bucketsByOrder(buckets: SegmentBucket[]): SegmentBucket[] {
         segment: s,
         count: 0,
         percent: 0,
+        avgTicket: 0,
+        avgNps: 0,
       }
   );
 }
@@ -235,9 +237,7 @@ export default function SegmentationScreen() {
                           />
                         </View>
                         <Text style={styles.segCount}>
-                          {b.count} clientes
-                          {b.avgTicket != null && ` · ticket médio R$ ${b.avgTicket.toFixed(0)}`}
-                          {b.avgNps != null && ` · NPS ${b.avgNps.toFixed(1)}`}
+                          {b.count} clientes · ticket médio R$ {b.avgTicket.toFixed(0)} · NPS {b.avgNps.toFixed(1)}
                         </Text>
                       </View>
                     </View>
