@@ -46,7 +46,7 @@ FordVINShare/
 │   ├── config/env.ts             # EXPO_PUBLIC_API_URL
 │   ├── constants/index.ts        # Design tokens (cores, spacing, radius, tipografia)
 │   ├── hooks/                    # 17 hooks React Query + utilidades
-│   ├── screens/                  # 13 telas (split client/analyst)
+│   ├── screens/                  # 14 telas (split client/analyst)
 │   ├── services/                 # 13 services da API + api.ts (axios) + secureStorage + queryPersist
 │   ├── types/index.ts            # Tipos compartilhados (User, UserRole, IconName)
 │   └── utils/                    # store.ts (Zustand), deepLinks.ts, pushNotifications.ts
@@ -93,6 +93,27 @@ npm start          # 'a' Android, 'i' iOS, 'w' Web
   `ESQUECIDO`/`ABANDONO`)
 - **Visão 360**: LTV, histórico, timeline detalhada, check-in e conclusão
   de atendimento
+
+## Telas
+
+Capturas do APK de `preview` rodando contra o backend no Azure. Convenção de
+nomes e roteiro de captura em [`docs/screenshots/`](docs/screenshots/README.md).
+
+### Cliente
+
+| | | |
+|---|---|---|
+| ![Login](docs/screenshots/01-login.png)<br>**Login** | ![Home](docs/screenshots/02-cliente-home.png)<br>**Home** | ![Agendar](docs/screenshots/03-cliente-agendar.png)<br>**Agendar** |
+| ![Localizador](docs/screenshots/04-cliente-localizador.png)<br>**Localizador** | ![Pontos](docs/screenshots/05-cliente-pontos.png)<br>**Pontos** | ![Chat](docs/screenshots/06-cliente-chat.png)<br>**Chat Ford AI** |
+| ![Perfil](docs/screenshots/07-cliente-perfil.png)<br>**Perfil** | ![Agendamentos](docs/screenshots/08-cliente-agendamentos.png)<br>**Meus agendamentos** | ![NPS](docs/screenshots/09-cliente-nps.png)<br>**Pesquisa NPS** |
+| ![Odômetro](docs/screenshots/10-cliente-odometro.png)<br>**Atualizar odômetro** | | |
+
+### Analista
+
+| | | |
+|---|---|---|
+| ![Dashboard](docs/screenshots/11-analista-dashboard.png)<br>**Dashboard** | ![Leads](docs/screenshots/12-analista-leads.png)<br>**Leads em risco** | ![Segmentação](docs/screenshots/13-analista-segmentacao.png)<br>**Segmentação** |
+| ![Visão 360](docs/screenshots/14-analista-visao360.png)<br>**Visão 360** | | |
 
 ## Identidade visual
 
