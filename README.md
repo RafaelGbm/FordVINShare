@@ -186,11 +186,11 @@ Faixas que viram `status` no lead:
 | Testes | `npm test` |
 | Validar back real | `EMAIL=… PASSWORD=… bash scripts/verify-backend.sh` |
 
-20 testes em 4 suítes:
+31 testes em 4 suítes:
 
 | Suíte | Cobre |
 |---|---|
-| `services/__tests__/api` | `ApiError` e o envelope de resposta |
+| `services/__tests__/api` | `ApiError`, o envelope de resposta e a tradução de erros que o backend não descreve (401 sem corpo, 5xx, timeout, falta de rede) |
 | `services/__tests__/queryPersist` | Allowlist de persistência do cache |
 | `utils/__tests__/deepLinks` | `parseDeepLink` |
 | `components/__tests__/StateBox` | Estados de loading/erro/vazio |

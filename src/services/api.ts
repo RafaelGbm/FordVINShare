@@ -79,6 +79,53 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+/**
+ * Builds a problem payload for responses the backend did not describe itself.
+ *
+ * Most errors arrive as problem+json and are used as-is. But some do not: a
+ * 401 with no body (what the API returns for a missing token), a gateway
+ * error, or no response at all. Those used to surface axios's own
+ * `error.message` — English text like "Request failed with status code 401" —
+ * straight into the UI, so they get a translated message here instead.
+ */
+export function fallbackProblem(error: AxiosError): ApiProblem {
+  const status = error.response?.status ?? 0;
+
+  if (!error.response) {
+    const timedOut = error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT';
+    return {
+      title: timedOut ? 'Tempo de conexão esgotado' : 'Sem conexão com o servidor',
+      detail: timedOut
+        ? 'O servidor demorou demais para responder. Tente novamente.'
+        : 'Verifique sua conexão com a internet e tente novamente.',
+      status: 0,
+    };
+  }
+
+  const BY_STATUS: Record<number, { title: string; detail: string }> = {
+    400: { title: 'Requisição inválida', detail: 'Confira os dados enviados e tente novamente.' },
+    401: { title: 'Sessão expirada', detail: 'Faça login novamente para continuar.' },
+    403: { title: 'Acesso negado', detail: 'Você não tem permissão para esta ação.' },
+    404: { title: 'Não encontrado', detail: 'O recurso solicitado não existe.' },
+    409: { title: 'Conflito', detail: 'Este registro foi alterado por outra pessoa.' },
+    422: { title: 'Não foi possível concluir', detail: 'Os dados enviados não são válidos.' },
+    429: { title: 'Muitas tentativas', detail: 'Aguarde um instante antes de tentar de novo.' },
+  };
+
+  const known = BY_STATUS[status];
+  if (known) return { ...known, status };
+
+  if (status >= 500) {
+    return {
+      title: 'Erro no servidor',
+      detail: 'O servidor não conseguiu responder. Tente novamente em instantes.',
+      status,
+    };
+  }
+
+  return { title: 'Erro de comunicação com o servidor', status };
+}
+
 /* ─────────────────────────────────────────────
  *  Response interceptor — refresh on 401, normalise errors
  * ───────────────────────────────────────────── */
@@ -154,9 +201,6 @@ api.interceptors.response.use(
       throw new ApiError(error.response.data as ApiProblem);
     }
 
-    throw new ApiError({
-      title: error.message || 'Erro de comunicação com o servidor',
-      status: status ?? 0,
-    });
+    throw new ApiError(fallbackProblem(error));
   }
 );
