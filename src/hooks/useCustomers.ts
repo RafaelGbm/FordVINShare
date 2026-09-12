@@ -7,19 +7,10 @@ import {
 
 export const customerKeys = {
   all: ['customers'] as const,
-  detail: (id: string) => [...customerKeys.all, 'detail', id] as const,
   v360: (id: string) => [...customerKeys.all, '360', id] as const,
   timeline: (id: string, params: ListTimelineParams) =>
     [...customerKeys.all, 'timeline', id, params] as const,
 };
-
-export function useCustomer(id: string | undefined) {
-  return useQuery({
-    queryKey: customerKeys.detail(id ?? ''),
-    queryFn: () => customersService.getById(id!),
-    enabled: !!id,
-  });
-}
 
 export function useCustomer360(id: string | undefined) {
   return useQuery({

@@ -1,5 +1,5 @@
 import { api } from './api';
-import { ServiceType } from './services.service';
+import { PaginatedResponse, ServiceType } from './services.service';
 
 export type AppointmentStatus =
   | 'SCHEDULED'
@@ -43,11 +43,20 @@ export const appointmentsService = {
     return data;
   },
 
+  /**
+   * Unlike the other list endpoints, this one answers with a Spring `Page`
+   * rather than a flat array. Normalising here keeps the page shape from
+   * leaking into the screens, which iterate the result directly.
+   */
   async listMine(status?: AppointmentStatus): Promise<AppointmentSummary[]> {
-    const { data } = await api.get<AppointmentSummary[]>('/me/appointments', {
+    const { data } = await api.get<
+      AppointmentSummary[] | PaginatedResponse<AppointmentSummary>
+    >('/me/appointments', {
       params: status ? { status } : undefined,
     });
-    return data;
+
+    if (Array.isArray(data)) return data;
+    return data?.content ?? [];
   },
 
   async getById(appointmentId: string): Promise<AppointmentSummary> {

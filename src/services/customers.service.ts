@@ -55,11 +55,6 @@ export interface ListTimelineParams {
 }
 
 export const customersService = {
-  async getById(customerId: string): Promise<CustomerProfile> {
-    const { data } = await api.get<CustomerProfile>(`/customers/${customerId}`);
-    return data;
-  },
-
   async get360(customerId: string): Promise<Customer360> {
     const { data } = await api.get<Customer360>(`/customers/${customerId}/360`);
     return data;
