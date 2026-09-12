@@ -50,3 +50,4 @@ app-example
 PROXIMOS-PASSOS.md
 db_insert_vehicle.py
 seed_demo_client.py
+db_seed_demo_history.py
