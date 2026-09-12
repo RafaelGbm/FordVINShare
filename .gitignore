@@ -45,3 +45,8 @@ app-example
 
 # Claude Code
 .claude/
+
+# Working notes with credentials — never commit
+PROXIMOS-PASSOS.md
+db_insert_vehicle.py
+seed_demo_client.py
