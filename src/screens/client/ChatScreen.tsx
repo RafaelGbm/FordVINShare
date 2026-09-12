@@ -10,9 +10,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { COLORS } from '../../constants';
@@ -28,15 +29,16 @@ import {
   SuggestedActionType,
 } from '../../services/chat.service';
 import { ApiError } from '../../services/api';
+import type { IconName } from '../../types';
 
-const SUGGESTIONS = [
+const SUGGESTIONS: { id: string; icon: IconName; label: string }[] = [
   { id: 's1', icon: 'calendar', label: 'Agendar revisão' },
   { id: 's2', icon: 'shield-check', label: 'Status da garantia' },
   { id: 's3', icon: 'cog-outline', label: 'Próxima manutenção' },
   { id: 's4', icon: 'gift-outline', label: 'Saldo de pontos' },
 ];
 
-const DEEP_LINK_MAP: Record<SuggestedActionType, string> = {
+const DEEP_LINK_MAP: Record<SuggestedActionType, Href> = {
   OPEN_SCHEDULING: '/(client)/scheduling',
   OPEN_LOCATOR: '/(client)/locator',
   OPEN_POINTS: '/(client)/points',
@@ -52,7 +54,55 @@ function formatTime(iso: string) {
 function handleSuggestedAction(action: SuggestedAction) {
   const path = DEEP_LINK_MAP[action.type];
   if (!path) return;
-  router.push(path as any);
+  router.push(path);
+}
+
+const TYPING_DOT_COUNT = 3;
+const TYPING_STAGGER_MS = 160;
+const TYPING_FADE_MS = 320;
+
+/**
+ * The "Ford AI is typing" indicator: three dots pulsing in sequence.
+ *
+ * Driven by the Animated API rather than CSS `animationDelay`, which React
+ * Native ignores on device — the dots used to be permanently static.
+ */
+function TypingDots() {
+  const opacities = useRef(
+    Array.from({ length: TYPING_DOT_COUNT }, () => new Animated.Value(0.3))
+  ).current;
+
+  useEffect(() => {
+    const loops = opacities.map((opacity, index) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(index * TYPING_STAGGER_MS),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: TYPING_FADE_MS,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0.3,
+            duration: TYPING_FADE_MS,
+            useNativeDriver: true,
+          }),
+          Animated.delay((TYPING_DOT_COUNT - 1 - index) * TYPING_STAGGER_MS),
+        ])
+      )
+    );
+
+    loops.forEach((loop) => loop.start());
+    return () => loops.forEach((loop) => loop.stop());
+  }, [opacities]);
+
+  return (
+    <>
+      {opacities.map((opacity, index) => (
+        <Animated.View key={index} style={[styles.typingDot, { opacity }]} />
+      ))}
+    </>
+  );
 }
 
 export default function ChatScreen() {
@@ -149,7 +199,7 @@ export default function ChatScreen() {
             </View>
           </View>
           <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="dots-vertical" size={20} color="#fff" />
+            <MaterialCommunityIcons name="dots-vertical" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -171,10 +221,10 @@ export default function ChatScreen() {
             style={[
               styles.bubble,
               styles.bubbleAi,
-              { alignSelf: 'center', backgroundColor: '#fce8e6' },
+              { alignSelf: 'center', backgroundColor: COLORS.dangerTint },
             ]}
           >
-            <Text style={[styles.bubbleText, { color: '#c62828' }]}>{bootstrapError}</Text>
+            <Text style={[styles.bubbleText, { color: COLORS.dangerText }]}>{bootstrapError}</Text>
           </View>
         )}
 
@@ -201,7 +251,7 @@ export default function ChatScreen() {
               >
                 {!isUser && !prevSameRole && (
                   <View style={styles.msgAvatar}>
-                    <MaterialCommunityIcons name="robot-happy" size={14} color="#fff" />
+                    <MaterialCommunityIcons name="robot-happy" size={14} color={COLORS.white} />
                   </View>
                 )}
                 {!isUser && prevSameRole && <View style={{ width: 30 }} />}
@@ -242,12 +292,10 @@ export default function ChatScreen() {
         {typing && (
           <View style={[styles.msgRow, styles.msgRowAi]}>
             <View style={styles.msgAvatar}>
-              <MaterialCommunityIcons name="robot-happy" size={14} color="#fff" />
+              <MaterialCommunityIcons name="robot-happy" size={14} color={COLORS.white} />
             </View>
             <View style={[styles.bubble, styles.bubbleAi, styles.bubbleTyping]}>
-              <View style={styles.typingDot} />
-              <View style={[styles.typingDot, { animationDelay: '0.2s' as any }]} />
-              <View style={[styles.typingDot, { animationDelay: '0.4s' as any }]} />
+              <TypingDots />
             </View>
           </View>
         )}
@@ -264,7 +312,7 @@ export default function ChatScreen() {
                   onPress={() => handleSend(s.label)}
                   activeOpacity={0.85}
                 >
-                  <MaterialCommunityIcons name={s.icon as any} size={14} color={COLORS.primary} />
+                  <MaterialCommunityIcons name={s.icon} size={14} color={COLORS.primary} />
                   <Text style={styles.suggestionText}>{s.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -307,12 +355,12 @@ export default function ChatScreen() {
           activeOpacity={0.85}
         >
           {sendMutation.isPending ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={COLORS.white} size="small" />
           ) : (
             <MaterialCommunityIcons
               name="send"
               size={20}
-              color={input.trim() && sessionId ? '#fff' : COLORS.gray}
+              color={input.trim() && sessionId ? COLORS.white : COLORS.gray}
             />
           )}
         </TouchableOpacity>
@@ -322,7 +370,7 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f5f5f7' },
+  root: { flex: 1, backgroundColor: COLORS.background },
 
   /* Header */
   header: {
@@ -352,7 +400,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -367,7 +415,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.primary,
   },
-  headerName: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  headerName: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
   statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2, gap: 5 },
   statusDotSmall: {
     width: 6,
@@ -428,9 +476,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   bubbleAi: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderBottomLeftRadius: 4,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -441,7 +489,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   bubbleText: { fontSize: 14, color: COLORS.dark, lineHeight: 20 },
-  bubbleTextUser: { color: '#fff' },
+  bubbleTextUser: { color: COLORS.white },
   bubbleTime: {
     fontSize: 10,
     color: COLORS.gray,
@@ -459,7 +507,6 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: COLORS.gray,
-    opacity: 0.6,
   },
 
   /* Suggested actions (deep links from assistant replies) */
@@ -474,7 +521,7 @@ const styles = StyleSheet.create({
   actionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
@@ -498,13 +545,13 @@ const styles = StyleSheet.create({
   suggestionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 18,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   suggestionText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
 
@@ -515,9 +562,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingTop: 10,
     paddingBottom: Platform.OS === 'ios' ? 26 : 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderTopWidth: 1,
-    borderTopColor: '#eef0f3',
+    borderTopColor: COLORS.surfaceAlt,
     gap: 6,
   },
   attachBtn: {
@@ -530,7 +577,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     borderRadius: 22,
     paddingLeft: 16,
     paddingRight: 4,
@@ -564,7 +611,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   sendBtnDisabled: {
-    backgroundColor: '#e8eaed',
+    backgroundColor: COLORS.border,
     shadowOpacity: 0,
   },
 });

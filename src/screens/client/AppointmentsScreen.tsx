@@ -22,6 +22,7 @@ import {
 } from '../../services/appointments.service';
 import { ServiceType } from '../../services/services.service';
 import { ApiError } from '../../services/api';
+import type { IconName } from '../../types';
 
 type FilterId = 'all' | 'upcoming' | 'history' | 'canceled';
 
@@ -36,11 +37,11 @@ const STATUS_META: Record<
   AppointmentStatus,
   { label: string; color: string; bg: string }
 > = {
-  SCHEDULED: { label: 'Agendado', color: COLORS.primary, bg: '#e8efff' },
-  CHECKED_IN: { label: 'Em atendimento', color: '#a36b00', bg: '#fff4e0' },
-  COMPLETED: { label: 'Concluído', color: COLORS.success, bg: '#e9f7ee' },
-  CANCELED: { label: 'Cancelado', color: '#ea4335', bg: '#fce8e6' },
-  NO_SHOW: { label: 'Não compareceu', color: '#ea4335', bg: '#fce8e6' },
+  SCHEDULED: { label: 'Agendado', color: COLORS.primary, bg: COLORS.primaryTintStrong },
+  CHECKED_IN: { label: 'Em atendimento', color: COLORS.warningText, bg: COLORS.warningTint },
+  COMPLETED: { label: 'Concluído', color: COLORS.success, bg: COLORS.successTint },
+  CANCELED: { label: 'Cancelado', color: COLORS.danger, bg: COLORS.dangerTint },
+  NO_SHOW: { label: 'Não compareceu', color: COLORS.danger, bg: COLORS.dangerTint },
 };
 
 const SERVICE_LABEL: Record<ServiceType, string> = {
@@ -50,7 +51,7 @@ const SERVICE_LABEL: Record<ServiceType, string> = {
   REPAIR: 'Reparo',
 };
 
-const SERVICE_ICON: Record<ServiceType, string> = {
+const SERVICE_ICON: Record<ServiceType, IconName> = {
   REVIEW: 'wrench',
   OIL_CHANGE: 'oil',
   WARRANTY: 'shield-check',
@@ -125,7 +126,7 @@ export default function AppointmentsScreen() {
 
         <View style={styles.heroTop}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="chevron-left" size={24} color="#fff" />
+            <MaterialCommunityIcons name="chevron-left" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={styles.heroTitle}>Meus agendamentos</Text>
           <View style={{ width: 40 }} />
@@ -192,9 +193,9 @@ export default function AppointmentsScreen() {
           return (
             <View key={a.id} style={styles.card}>
               <View style={styles.cardHead}>
-                <View style={[styles.serviceIcon, { backgroundColor: '#e8efff' }]}>
+                <View style={[styles.serviceIcon, { backgroundColor: COLORS.primaryTintStrong }]}>
                   <MaterialCommunityIcons
-                    name={SERVICE_ICON[a.serviceType] as any}
+                    name={SERVICE_ICON[a.serviceType]}
                     size={22}
                     color={COLORS.primary}
                   />
@@ -233,7 +234,7 @@ export default function AppointmentsScreen() {
                   disabled={cancelMutation.isPending}
                   activeOpacity={0.85}
                 >
-                  <MaterialCommunityIcons name="close-circle-outline" size={16} color="#ea4335" />
+                  <MaterialCommunityIcons name="close-circle-outline" size={16} color={COLORS.danger} />
                   <Text style={styles.cancelBtnText}>Cancelar agendamento</Text>
                 </TouchableOpacity>
               )}
@@ -280,7 +281,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
   heroSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
 
   filters: {
@@ -294,24 +295,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 18,
   },
-  filterChipActive: { backgroundColor: '#fff' },
+  filterChipActive: { backgroundColor: COLORS.white },
   filterText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
   filterTextActive: { color: COLORS.primary },
 
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
   },
   scrollContent: { padding: 16, paddingTop: 22 },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 14,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -346,8 +347,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginTop: 12,
     borderRadius: 10,
-    backgroundColor: '#fce8e6',
+    backgroundColor: COLORS.dangerTint,
     gap: 6,
   },
-  cancelBtnText: { color: '#ea4335', fontWeight: '800', fontSize: 13 },
+  cancelBtnText: { color: COLORS.danger, fontWeight: '800', fontSize: 13 },
 });

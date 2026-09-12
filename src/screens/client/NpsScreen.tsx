@@ -29,8 +29,8 @@ const CATEGORIES: { id: NpsCategory; label: string }[] = [
 
 function scoreColor(score: number) {
   if (score >= 9) return COLORS.success;
-  if (score >= 7) return '#f5a623';
-  return '#ea4335';
+  if (score >= 7) return COLORS.warning;
+  return COLORS.danger;
 }
 
 function scoreLabel(score: number | null) {
@@ -89,7 +89,7 @@ export default function NpsScreen() {
 
         <View style={styles.heroTop}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="close" size={22} color="#fff" />
+            <MaterialCommunityIcons name="close" size={22} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={styles.heroTitle}>Avaliação do serviço</Text>
           <View style={{ width: 40 }} />
@@ -124,7 +124,7 @@ export default function NpsScreen() {
                   onPress={() => setScore(i)}
                   activeOpacity={0.85}
                 >
-                  <Text style={[styles.scoreBtnText, selected && { color: '#fff' }]}>
+                  <Text style={[styles.scoreBtnText, selected && { color: COLORS.white }]}>
                     {i}
                   </Text>
                 </TouchableOpacity>
@@ -157,7 +157,7 @@ export default function NpsScreen() {
                 key={c.id}
                 style={[
                   styles.chip,
-                  selected && { backgroundColor: '#e9f7ee', borderColor: COLORS.success },
+                  selected && { backgroundColor: COLORS.successTint, borderColor: COLORS.success },
                 ]}
                 onPress={() => toggle(liked, setLiked, c.id)}
                 activeOpacity={0.85}
@@ -186,15 +186,15 @@ export default function NpsScreen() {
                 key={c.id}
                 style={[
                   styles.chip,
-                  selected && { backgroundColor: '#fff4e0', borderColor: '#f5a623' },
+                  selected && { backgroundColor: COLORS.warningTint, borderColor: COLORS.warning },
                 ]}
                 onPress={() => toggle(improve, setImprove, c.id)}
                 activeOpacity={0.85}
               >
                 {selected && (
-                  <MaterialCommunityIcons name="check" size={12} color="#a36b00" />
+                  <MaterialCommunityIcons name="check" size={12} color={COLORS.warningText} />
                 )}
-                <Text style={[styles.chipText, selected && { color: '#a36b00' }]}>
+                <Text style={[styles.chipText, selected && { color: COLORS.warningText }]}>
                   {c.label}
                 </Text>
               </TouchableOpacity>
@@ -230,11 +230,11 @@ export default function NpsScreen() {
           activeOpacity={0.85}
         >
           {submit.isPending ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={COLORS.white} size="small" />
           ) : (
             <>
               <Text style={styles.ctaText}>Enviar avaliação</Text>
-              <MaterialCommunityIcons name="send" size={18} color="#fff" />
+              <MaterialCommunityIcons name="send" size={18} color={COLORS.white} />
             </>
           )}
         </TouchableOpacity>
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
   heroSub: {
     color: 'rgba(255,255,255,0.85)',
     fontSize: 13,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
 
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -20,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -293,11 +293,11 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20, paddingTop: 22, paddingBottom: 24 },
 
   scoreCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 18,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -313,12 +313,12 @@ const styles = StyleSheet.create({
     width: '8.8%',
     minWidth: 28,
     aspectRatio: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   scoreBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.dark },
   scoreLegend: {
@@ -345,15 +345,15 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   chipText: { fontSize: 12, fontWeight: '700', color: COLORS.dark },
 
   textarea: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     padding: 14,
     fontSize: 14,
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     minHeight: 96,
     textAlignVertical: 'top',
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   counter: {
     alignSelf: 'flex-end',
@@ -371,12 +371,12 @@ const styles = StyleSheet.create({
   },
 
   footer: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 28,
     borderTopWidth: 1,
-    borderTopColor: '#eef0f3',
+    borderTopColor: COLORS.surfaceAlt,
   },
   cta: {
     flexDirection: 'row',
@@ -392,6 +392,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  ctaDisabled: { backgroundColor: '#c5cdd9', shadowOpacity: 0 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
+  ctaDisabled: { backgroundColor: COLORS.borderStrong, shadowOpacity: 0 },
+  ctaText: { color: COLORS.white, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
 });

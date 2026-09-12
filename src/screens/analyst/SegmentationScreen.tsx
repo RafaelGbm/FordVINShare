@@ -15,18 +15,19 @@ import { useSegmentDistribution } from '../../hooks/useSegments';
 import { LeadSegment } from '../../services/leads.service';
 import { SegmentBucket } from '../../services/segments.service';
 import { ApiError } from '../../services/api';
+import type { IconName } from '../../types';
 
 type SegmentVisual = {
   label: string;
   color: string;
-  icon: string;
+  icon: IconName;
 };
 
 const SEGMENT_META: Record<LeadSegment, SegmentVisual> = {
   FIEL: { label: 'Fiel', color: COLORS.success, icon: 'heart' },
   ECONOMICO: { label: 'Econômico', color: COLORS.secondary, icon: 'cash' },
-  ESQUECIDO: { label: 'Esquecido', color: '#f5a623', icon: 'alert' },
-  ABANDONO: { label: 'Abandono', color: '#ea4335', icon: 'account-off' },
+  ESQUECIDO: { label: 'Esquecido', color: COLORS.warning, icon: 'alert' },
+  ABANDONO: { label: 'Abandono', color: COLORS.danger, icon: 'account-off' },
 };
 
 const SEGMENT_ORDER: LeadSegment[] = ['FIEL', 'ECONOMICO', 'ESQUECIDO', 'ABANDONO'];
@@ -84,7 +85,7 @@ export default function SegmentationScreen() {
             <MaterialCommunityIcons
               name={isRefetching ? 'loading' : 'refresh'}
               size={20}
-              color="#fff"
+              color={COLORS.white}
             />
           </TouchableOpacity>
         </View>
@@ -130,7 +131,7 @@ export default function SegmentationScreen() {
 
         {error && !isLoading && (
           <View style={styles.stateBox}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={36} color="#ea4335" />
+            <MaterialCommunityIcons name="alert-circle-outline" size={36} color={COLORS.danger} />
             <Text style={styles.stateTitle}>Falha ao carregar segmentação</Text>
             <Text style={styles.stateText}>
               {error instanceof ApiError
@@ -155,7 +156,7 @@ export default function SegmentationScreen() {
                   <MaterialCommunityIcons
                     name="chart-donut"
                     size={14}
-                    color={view === 'donut' ? '#fff' : COLORS.gray}
+                    color={view === 'donut' ? COLORS.white : COLORS.gray}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -165,7 +166,7 @@ export default function SegmentationScreen() {
                   <MaterialCommunityIcons
                     name="format-list-bulleted"
                     size={14}
-                    color={view === 'list' ? '#fff' : COLORS.gray}
+                    color={view === 'list' ? COLORS.white : COLORS.gray}
                   />
                 </TouchableOpacity>
               </View>
@@ -222,7 +223,7 @@ export default function SegmentationScreen() {
                   return (
                     <View key={b.segment} style={styles.segCard}>
                       <View style={[styles.segIcon, { backgroundColor: `${meta.color}20` }]}>
-                        <MaterialCommunityIcons name={meta.icon as any} size={22} color={meta.color} />
+                        <MaterialCommunityIcons name={meta.icon} size={22} color={meta.color} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={styles.segHead}>
@@ -293,7 +294,7 @@ export default function SegmentationScreen() {
             {(riskBucket || lostBucket) && (
               <View style={styles.actionCard}>
                 <View style={styles.actionIcon}>
-                  <MaterialCommunityIcons name="lightbulb-on" size={24} color="#f5a623" />
+                  <MaterialCommunityIcons name="lightbulb-on" size={24} color={COLORS.warning} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.actionTitle}>Plano de retenção sugerido</Text>
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
   },
-  heroTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginTop: 4 },
+  heroTitle: { color: COLORS.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
   iconBtn: {
     width: 40,
     height: 40,
@@ -372,8 +373,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   totalValueRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginTop: 4 },
-  totalValue: { color: '#fff', fontSize: 36, fontWeight: '800', letterSpacing: -1 },
-  totalUnit: { color: '#fff', fontSize: 13, fontWeight: '700', marginBottom: 6 },
+  totalValue: { color: COLORS.white, fontSize: 36, fontWeight: '800', letterSpacing: -1 },
+  totalUnit: { color: COLORS.white, fontSize: 13, fontWeight: '700', marginBottom: 6 },
   totalDelta: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
   totalDeltaText: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600' },
   miniRings: {
@@ -386,11 +387,11 @@ const styles = StyleSheet.create({
   },
   miniRingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   miniDot: { width: 8, height: 8, borderRadius: 4 },
-  miniRingText: { color: '#fff', fontSize: 11, fontWeight: '700', minWidth: 28 },
+  miniRingText: { color: COLORS.white, fontSize: 11, fontWeight: '700', minWidth: 28 },
 
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -28,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 4,
   },
-  retryText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  retryText: { color: COLORS.white, fontWeight: '800', fontSize: 13 },
 
   viewToggle: {
     flexDirection: 'row',
@@ -416,18 +417,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: { fontSize: 15, fontWeight: '800', color: COLORS.dark, marginBottom: 10 },
-  toggleGroup: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 8, padding: 3 },
+  toggleGroup: { flexDirection: 'row', backgroundColor: COLORS.white, borderRadius: 8, padding: 3 },
   toggleBtn: { width: 30, height: 26, justifyContent: 'center', alignItems: 'center', borderRadius: 5 },
   toggleBtnActive: { backgroundColor: COLORS.primary },
 
   donutCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 18,
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: COLORS.surfaceMuted,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -456,7 +457,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
@@ -473,11 +474,11 @@ const styles = StyleSheet.create({
   segCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     padding: 14,
     marginBottom: 8,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -494,16 +495,16 @@ const styles = StyleSheet.create({
   segHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   segLabel: { fontSize: 14, fontWeight: '800', color: COLORS.dark },
   segPct: { fontSize: 16, fontWeight: '800' },
-  segBar: { height: 5, borderRadius: 3, backgroundColor: '#f0f2f5', overflow: 'hidden' },
+  segBar: { height: 5, borderRadius: 3, backgroundColor: COLORS.surfaceMuted, overflow: 'hidden' },
   segFill: { height: '100%', borderRadius: 3 },
   segCount: { fontSize: 11, color: COLORS.gray, marginTop: 6, fontWeight: '600' },
 
   funnelCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -518,17 +519,17 @@ const styles = StyleSheet.create({
     minWidth: 60,
     marginBottom: 4,
   },
-  funnelValue: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  funnelValue: { color: COLORS.white, fontSize: 13, fontWeight: '800' },
   funnelMeta: { flexDirection: 'row', justifyContent: 'space-between' },
   funnelLabel: { fontSize: 12, color: COLORS.dark, fontWeight: '700' },
   funnelPct: { fontSize: 12, color: COLORS.gray, fontWeight: '700' },
 
   riskCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     paddingHorizontal: 14,
     marginBottom: 14,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -538,19 +539,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f2f5',
+    borderBottomColor: COLORS.surfaceMuted,
   },
   riskLeft: { marginRight: 12 },
   riskRank: {
     width: 26,
     height: 26,
     borderRadius: 8,
-    backgroundColor: '#fff4e0',
+    backgroundColor: COLORS.warningTint,
     textAlign: 'center',
     lineHeight: 26,
     fontSize: 12,
     fontWeight: '800',
-    color: '#a36b00',
+    color: COLORS.warningText,
   },
   riskHead: {
     flexDirection: 'row',
@@ -560,41 +561,41 @@ const styles = StyleSheet.create({
   },
   riskLabel: { fontSize: 13, fontWeight: '700', color: COLORS.dark, flex: 1 },
   riskWeight: {
-    backgroundColor: '#fff4e0',
+    backgroundColor: COLORS.warningTint,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 5,
   },
-  riskWeightText: { fontSize: 10, fontWeight: '800', color: '#a36b00' },
-  riskBar: { height: 4, borderRadius: 2, backgroundColor: '#f0f2f5', overflow: 'hidden' },
-  riskFill: { height: '100%', backgroundColor: '#f5a623', borderRadius: 2 },
+  riskWeightText: { fontSize: 10, fontWeight: '800', color: COLORS.warningText },
+  riskBar: { height: 4, borderRadius: 2, backgroundColor: COLORS.surfaceMuted, overflow: 'hidden' },
+  riskFill: { height: '100%', backgroundColor: COLORS.warning, borderRadius: 2 },
   riskPct: { fontSize: 11, color: COLORS.gray, marginTop: 6, fontWeight: '600' },
 
   actionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff8e6',
+    backgroundColor: COLORS.warningTint,
     borderRadius: 16,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#f5a623',
+    borderLeftColor: COLORS.warning,
     gap: 12,
   },
   actionIcon: {
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionTitle: { fontSize: 14, fontWeight: '800', color: '#8c5a00' },
-  actionDesc: { fontSize: 12, color: '#a36b00', marginTop: 4, lineHeight: 16 },
+  actionTitle: { fontSize: 14, fontWeight: '800', color: COLORS.warningText },
+  actionDesc: { fontSize: 12, color: COLORS.warningText, marginTop: 4, lineHeight: 16 },
   actionBtn: {
-    backgroundColor: '#f5a623',
+    backgroundColor: COLORS.warning,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
   },
-  actionBtnText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+  actionBtnText: { color: COLORS.white, fontWeight: '800', fontSize: 12 },
 });

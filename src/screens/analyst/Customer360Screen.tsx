@@ -12,7 +12,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { COLORS } from '../../constants';
+import { COLORS, ACCENTS } from '../../constants';
 import { useCustomer360, useCustomerTimeline } from '../../hooks/useCustomers';
 import {
   useCheckInAppointment,
@@ -27,12 +27,13 @@ import { LeadSegment } from '../../services/leads.service';
 import { ServiceType } from '../../services/services.service';
 import { WarrantyStatus } from '../../services/vehicles.service';
 import { TimelineEventType } from '../../services/customers.service';
+import type { IconName } from '../../types';
 
 const SEGMENT_META: Record<LeadSegment, { label: string; color: string; bg: string }> = {
-  FIEL: { label: 'Fiel', color: COLORS.success, bg: '#e9f7ee' },
-  ECONOMICO: { label: 'Econômico', color: COLORS.secondary, bg: '#e8efff' },
-  ESQUECIDO: { label: 'Esquecido', color: '#a36b00', bg: '#fff4e0' },
-  ABANDONO: { label: 'Abandono', color: '#ea4335', bg: '#fce8e6' },
+  FIEL: { label: 'Fiel', color: COLORS.success, bg: COLORS.successTint },
+  ECONOMICO: { label: 'Econômico', color: COLORS.secondary, bg: COLORS.primaryTintStrong },
+  ESQUECIDO: { label: 'Esquecido', color: COLORS.warningText, bg: COLORS.warningTint },
+  ABANDONO: { label: 'Abandono', color: COLORS.danger, bg: COLORS.dangerTint },
 };
 
 const SERVICE_LABEL: Record<ServiceType, string> = {
@@ -50,11 +51,11 @@ const WARRANTY_LABEL: Record<WarrantyStatus, string> = {
 
 const WARRANTY_COLOR: Record<WarrantyStatus, string> = {
   ACTIVE: COLORS.success,
-  EXPIRING_SOON: '#a36b00',
-  EXPIRED: '#ea4335',
+  EXPIRING_SOON: COLORS.warningText,
+  EXPIRED: COLORS.danger,
 };
 
-const TIMELINE_ICON: Record<TimelineEventType, string> = {
+const TIMELINE_ICON: Record<TimelineEventType, IconName> = {
   SERVICE: 'wrench',
   APPOINTMENT: 'calendar',
   NPS: 'star',
@@ -66,10 +67,10 @@ const TIMELINE_ICON: Record<TimelineEventType, string> = {
 const TIMELINE_COLOR: Record<TimelineEventType, string> = {
   SERVICE: COLORS.success,
   APPOINTMENT: COLORS.primary,
-  NPS: '#f5a623',
-  REDEEM: '#9c27b0',
+  NPS: COLORS.warning,
+  REDEEM: ACCENTS.purple,
   LEAD_ACTION: COLORS.secondary,
-  WARRANTY_EVENT: '#1e8e3e',
+  WARRANTY_EVENT: COLORS.success,
 };
 
 function formatCurrency(v: number) {
@@ -101,7 +102,7 @@ export default function Customer360Screen() {
   if (c360Query.isLoading) {
     return (
       <View style={styles.splash}>
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color={COLORS.white} />
         <Text style={styles.splashText}>Carregando visão 360...</Text>
       </View>
     );
@@ -114,7 +115,7 @@ export default function Customer360Screen() {
         : 'Não foi possível carregar o cliente';
     return (
       <View style={styles.splash}>
-        <MaterialCommunityIcons name="alert-circle" size={48} color="#fff" />
+        <MaterialCommunityIcons name="alert-circle" size={48} color={COLORS.white} />
         <Text style={styles.splashText}>{message}</Text>
         <TouchableOpacity style={styles.splashBtn} onPress={() => router.back()}>
           <Text style={styles.splashBtnText}>Voltar</Text>
@@ -138,11 +139,11 @@ export default function Customer360Screen() {
 
         <View style={styles.heroTop}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="chevron-left" size={24} color="#fff" />
+            <MaterialCommunityIcons name="chevron-left" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={styles.heroTitle}>Visão 360</Text>
           <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="dots-vertical" size={20} color="#fff" />
+            <MaterialCommunityIcons name="dots-vertical" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
@@ -160,7 +161,7 @@ export default function Customer360Screen() {
               </Text>
             </View>
             <View style={styles.scorePill}>
-              <MaterialCommunityIcons name="speedometer" size={12} color="#fff" />
+              <MaterialCommunityIcons name="speedometer" size={12} color={COLORS.white} />
               <Text style={styles.scoreText}>Risco {riskScore}/100</Text>
             </View>
           </View>
@@ -175,7 +176,7 @@ export default function Customer360Screen() {
         {/* Contact */}
         <View style={styles.contactRow}>
           <TouchableOpacity style={styles.contactBtnPrimary} activeOpacity={0.85}>
-            <MaterialCommunityIcons name="phone" size={16} color="#fff" />
+            <MaterialCommunityIcons name="phone" size={16} color={COLORS.white} />
             <Text style={styles.contactBtnPrimaryText}>Ligar</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.contactBtn} activeOpacity={0.85}>
@@ -202,12 +203,12 @@ export default function Customer360Screen() {
             <Text style={styles.statLabel}>serviços</Text>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="cart-outline" size={20} color="#9c27b0" />
+            <MaterialCommunityIcons name="cart-outline" size={20} color={ACCENTS.purple} />
             <Text style={styles.statValue}>{formatCurrency(lifetime.avgTicket)}</Text>
             <Text style={styles.statLabel}>ticket médio</Text>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="star" size={20} color="#f5a623" />
+            <MaterialCommunityIcons name="star" size={20} color={COLORS.warning} />
             <Text style={styles.statValue}>{lifetime.avgNps.toFixed(1)}</Text>
             <Text style={styles.statLabel}>NPS médio</Text>
           </View>
@@ -278,7 +279,7 @@ export default function Customer360Screen() {
           recentServices.map((s) => (
             <View key={s.id} style={styles.serviceRow}>
               <View style={styles.serviceIcon}>
-                <MaterialCommunityIcons name="wrench" size={16} color="#fff" />
+                <MaterialCommunityIcons name="wrench" size={16} color={COLORS.white} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.serviceTitle}>{SERVICE_LABEL[s.serviceType]}</Text>
@@ -317,9 +318,9 @@ export default function Customer360Screen() {
                 ]}
               >
                 <MaterialCommunityIcons
-                  name={TIMELINE_ICON[event.type] as any}
+                  name={TIMELINE_ICON[event.type]}
                   size={12}
-                  color="#fff"
+                  color={COLORS.white}
                 />
               </View>
               {i < arr.length - 1 && <View style={styles.timelineLine} />}
@@ -395,7 +396,7 @@ function ActiveAppointmentCard({ appointment }: { appointment: AppointmentSummar
   return (
     <View style={styles.apptCard}>
       <View style={styles.apptCardHead}>
-        <View style={[styles.apptIcon, { backgroundColor: '#e8efff' }]}>
+        <View style={[styles.apptIcon, { backgroundColor: COLORS.primaryTintStrong }]}>
           <MaterialCommunityIcons name="calendar-check" size={20} color={COLORS.primary} />
         </View>
         <View style={{ flex: 1 }}>
@@ -421,10 +422,10 @@ function ActiveAppointmentCard({ appointment }: { appointment: AppointmentSummar
               activeOpacity={0.85}
             >
               {checkInMutation.isPending ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={COLORS.white} size="small" />
               ) : (
                 <>
-                  <MaterialCommunityIcons name="account-arrow-right" size={16} color="#fff" />
+                  <MaterialCommunityIcons name="account-arrow-right" size={16} color={COLORS.white} />
                   <Text style={styles.apptActionPrimaryText}>Registrar chegada</Text>
                 </>
               )}
@@ -438,10 +439,10 @@ function ActiveAppointmentCard({ appointment }: { appointment: AppointmentSummar
               activeOpacity={0.85}
             >
               {completeMutation.isPending ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={COLORS.white} size="small" />
               ) : (
                 <>
-                  <MaterialCommunityIcons name="check-circle" size={16} color="#fff" />
+                  <MaterialCommunityIcons name="check-circle" size={16} color={COLORS.white} />
                   <Text style={styles.apptActionPrimaryText}>Concluir atendimento</Text>
                 </>
               )}
@@ -464,9 +465,9 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 24,
   },
-  splashText: { color: '#fff', fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  splashText: { color: COLORS.white, fontSize: 14, fontWeight: '600', textAlign: 'center' },
   splashBtn: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 12,
@@ -514,20 +515,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
 
   profileCard: { alignItems: 'center' },
   avatar: {
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
   avatarText: { color: COLORS.primary, fontWeight: '800', fontSize: 26 },
-  customerName: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  customerName: { color: COLORS.white, fontSize: 20, fontWeight: '800' },
   customerCpf: { color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2 },
   segmentRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   segmentBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
@@ -541,12 +542,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
   },
-  scoreText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  scoreText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
 
   /* Scroll */
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -30,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -565,18 +566,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
-  contactBtnPrimaryText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  contactBtnPrimaryText: { color: COLORS.white, fontWeight: '800', fontSize: 13 },
   contactBtn: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingVertical: 11,
     borderRadius: 12,
     gap: 6,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   contactBtnText: { color: COLORS.primary, fontWeight: '800', fontSize: 13 },
 
@@ -592,10 +593,10 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   statCard: {
     width: '48.5%',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     padding: 14,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -605,7 +606,7 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
 
   relationshipDates: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     padding: 14,
     marginTop: 8,
@@ -617,7 +618,7 @@ const styles = StyleSheet.create({
 
   /* Appointment */
   apptCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     padding: 12,
     borderRadius: 14,
     marginBottom: 8,
@@ -642,7 +643,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   apptActionPrimaryText: {
-    color: '#fff',
+    color: COLORS.white,
     fontWeight: '800',
     fontSize: 13,
   },
@@ -657,7 +658,7 @@ const styles = StyleSheet.create({
   apptTitle: { fontSize: 14, fontWeight: '700', color: COLORS.dark },
   apptSub: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
   apptStatus: {
-    backgroundColor: '#e8efff',
+    backgroundColor: COLORS.primaryTintStrong,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -668,7 +669,7 @@ const styles = StyleSheet.create({
   vehicleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     padding: 12,
     borderRadius: 14,
     marginBottom: 8,
@@ -677,7 +678,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -693,7 +694,7 @@ const styles = StyleSheet.create({
   serviceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     padding: 12,
     borderRadius: 14,
     marginBottom: 8,
@@ -722,10 +723,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  timelineLine: { flex: 1, width: 2, backgroundColor: '#e6e8eb', marginVertical: 4 },
+  timelineLine: { flex: 1, width: 2, backgroundColor: COLORS.border, marginVertical: 4 },
   timelineCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     padding: 12,
     borderRadius: 12,
     marginBottom: 8,
@@ -737,6 +738,6 @@ const styles = StyleSheet.create({
   timelineDesc: { fontSize: 11, color: COLORS.gray, marginTop: 4, lineHeight: 15 },
 
   /* Empty */
-  empty: { backgroundColor: '#fff', padding: 16, borderRadius: 14, alignItems: 'center' },
+  empty: { backgroundColor: COLORS.white, padding: 16, borderRadius: 14, alignItems: 'center' },
   emptyText: { fontSize: 12, color: COLORS.gray },
 });

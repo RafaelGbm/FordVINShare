@@ -12,7 +12,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { COLORS } from '../../constants';
+import { COLORS, ACCENT_TINTS, ACCENTS } from '../../constants';
 import { useAuthStore } from '../../utils/store';
 import FordLogo from '../../components/FordLogo';
 import { StateBox } from '../../components/StateBox';
@@ -24,6 +24,7 @@ import {
   useVinShareByDealership,
 } from '../../hooks/useAnalytics';
 import { AnalyticsPeriod, KpisWithDelta } from '../../services/analytics.service';
+import type { IconName } from '../../types';
 
 const { width } = Dimensions.get('window');
 
@@ -41,7 +42,7 @@ type KpiCard = {
   delta?: number;
   deltaSuffix?: string;
   invertDelta?: boolean; // for "leadsAtRisk" higher is bad
-  icon: string;
+  icon: IconName;
   color: string;
   bg: string;
 };
@@ -61,7 +62,7 @@ function buildKpiCards(k: KpisWithDelta | undefined): KpiCard[] {
       delta: k?.vehiclesUnderWarrantyDelta,
       icon: 'shield-car',
       color: COLORS.primary,
-      bg: '#e8efff',
+      bg: COLORS.primaryTintStrong,
     },
     {
       id: 'k2',
@@ -70,8 +71,8 @@ function buildKpiCards(k: KpisWithDelta | undefined): KpiCard[] {
       delta: k?.vinSharePercentDelta,
       deltaSuffix: '%',
       icon: 'chart-donut',
-      color: '#1e8e3e',
-      bg: '#e9f7ee',
+      color: COLORS.success,
+      bg: COLORS.successTint,
     },
     {
       id: 'k3',
@@ -80,8 +81,8 @@ function buildKpiCards(k: KpisWithDelta | undefined): KpiCard[] {
       delta: k?.estimatedRevenueDelta,
       deltaSuffix: '%',
       icon: 'cash-multiple',
-      color: '#f5a623',
-      bg: '#fff4e0',
+      color: COLORS.warning,
+      bg: COLORS.warningTint,
     },
     {
       id: 'k4',
@@ -90,8 +91,8 @@ function buildKpiCards(k: KpisWithDelta | undefined): KpiCard[] {
       delta: k?.leadsAtRiskDelta,
       invertDelta: true,
       icon: 'account-alert',
-      color: '#9c27b0',
-      bg: '#f3e5f5',
+      color: ACCENTS.purple,
+      bg: ACCENT_TINTS.purple,
     },
   ];
 }
@@ -129,13 +130,13 @@ export default function DashboardScreen() {
           <FordLogo width={90} height={36} />
           <View style={styles.heroActions}>
             <TouchableOpacity style={styles.iconBtn}>
-              <MaterialCommunityIcons name="bell-outline" size={20} color="#fff" />
+              <MaterialCommunityIcons name="bell-outline" size={20} color={COLORS.white} />
               <View style={styles.notifBadge}>
                 <Text style={styles.notifBadgeText}>3</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn} onPress={handleLogout}>
-              <MaterialCommunityIcons name="logout-variant" size={20} color="#fff" />
+              <MaterialCommunityIcons name="logout-variant" size={20} color={COLORS.white} />
             </TouchableOpacity>
           </View>
         </View>
@@ -143,7 +144,7 @@ export default function DashboardScreen() {
         <View style={styles.heroGreeting}>
           <Text style={styles.heroHello}>Olá, {me?.fullName?.split(' ')[0] ?? '—'}</Text>
           <View style={styles.dealerTag}>
-            <MaterialCommunityIcons name="store" size={12} color="#fff" />
+            <MaterialCommunityIcons name="store" size={12} color={COLORS.white} />
             <Text style={styles.dealerText}>Ford SP Centro · Analista</Text>
           </View>
         </View>
@@ -195,7 +196,7 @@ export default function DashboardScreen() {
             return (
               <View key={k.id} style={styles.kpiCard}>
                 <View style={[styles.kpiIcon, { backgroundColor: k.bg }]}>
-                  <MaterialCommunityIcons name={k.icon as any} size={22} color={k.color} />
+                  <MaterialCommunityIcons name={k.icon} size={22} color={k.color} />
                 </View>
                 <Text style={styles.kpiLabel}>{k.label}</Text>
                 <Text style={styles.kpiValue}>
@@ -206,12 +207,12 @@ export default function DashboardScreen() {
                     <MaterialCommunityIcons
                       name={isUp ? 'trending-up' : 'trending-down'}
                       size={12}
-                      color={positive ? COLORS.success : '#ea4335'}
+                      color={positive ? COLORS.success : COLORS.danger}
                     />
                     <Text
                       style={[
                         styles.kpiDeltaText,
-                        { color: positive ? COLORS.success : '#ea4335' },
+                        { color: positive ? COLORS.success : COLORS.danger },
                       ]}
                     >
                       {isUp ? '+' : ''}
@@ -267,7 +268,7 @@ export default function DashboardScreen() {
                           styles.chartBar,
                           {
                             height: `${height}%`,
-                            backgroundColor: isPeak ? COLORS.primary : '#c5d4f0',
+                            backgroundColor: isPeak ? COLORS.primary : COLORS.primaryBorder,
                           },
                         ]}
                       />
@@ -310,10 +311,10 @@ export default function DashboardScreen() {
             <TouchableOpacity
               style={styles.insightCard}
               activeOpacity={0.85}
-              onPress={() => router.push('/(analyst)/leads' as any)}
+              onPress={() => router.push('/(analyst)/leads')}
             >
-              <View style={[styles.insightIcon, { backgroundColor: '#fce8e6' }]}>
-                <MaterialCommunityIcons name="alert-circle" size={22} color="#ea4335" />
+              <View style={[styles.insightIcon, { backgroundColor: COLORS.dangerTint }]}>
+                <MaterialCommunityIcons name="alert-circle" size={22} color={COLORS.danger} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.insightTitle}>
@@ -353,7 +354,7 @@ export default function DashboardScreen() {
               style={[styles.dealerRow, i === topDealers.length - 1 && { borderBottomWidth: 0 }]}
             >
               <View style={[styles.dealerRank, i === 0 && styles.dealerRankGold]}>
-                <Text style={[styles.dealerRankText, i === 0 && { color: '#a36b00' }]}>
+                <Text style={[styles.dealerRankText, i === 0 && { color: COLORS.warningText }]}>
                   {i + 1}
                 </Text>
               </View>
@@ -377,7 +378,7 @@ export default function DashboardScreen() {
                       d.trend === 'UP'
                         ? COLORS.success
                         : d.trend === 'DOWN'
-                          ? '#ea4335'
+                          ? COLORS.danger
                           : COLORS.gray
                     }
                   />
@@ -389,7 +390,7 @@ export default function DashboardScreen() {
                           d.trend === 'UP'
                             ? COLORS.success
                             : d.trend === 'DOWN'
-                              ? '#ea4335'
+                              ? COLORS.danger
                               : COLORS.gray,
                       },
                     ]}
@@ -461,13 +462,13 @@ const styles = StyleSheet.create({
     height: 16,
     paddingHorizontal: 4,
     borderRadius: 8,
-    backgroundColor: '#ea4335',
+    backgroundColor: COLORS.danger,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  notifBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  notifBadgeText: { color: COLORS.white, fontSize: 9, fontWeight: '800' },
   heroGreeting: {},
-  heroHello: { color: '#fff', fontSize: 24, fontWeight: '800', marginBottom: 6 },
+  heroHello: { color: COLORS.white, fontSize: 24, fontWeight: '800', marginBottom: 6 },
   dealerTag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -478,12 +479,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
   },
-  dealerText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  dealerText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
 
   /* Scroll */
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -22,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -500,14 +501,14 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 16, fontWeight: '800', color: COLORS.dark },
   periodPills: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 10,
     padding: 3,
   },
   periodPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 7 },
   periodPillActive: { backgroundColor: COLORS.primary },
   periodText: { fontSize: 11, fontWeight: '700', color: COLORS.gray },
-  periodTextActive: { color: '#fff' },
+  periodTextActive: { color: COLORS.white },
 
   /* KPIs */
   kpisGrid: {
@@ -518,10 +519,10 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     width: (width - 32 - 10) / 2,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 14,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -549,11 +550,11 @@ const styles = StyleSheet.create({
 
   /* Chart */
   chartCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -595,17 +596,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     zIndex: 2,
   },
-  chartPeakText: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  chartPeakText: { color: COLORS.white, fontSize: 9, fontWeight: '800' },
   chartLabel: { fontSize: 10, color: COLORS.gray, fontWeight: '700', marginTop: 6 },
 
   chartFooter: {
     flexDirection: 'row',
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: '#f0f2f5',
+    borderTopColor: COLORS.surfaceMuted,
   },
   chartFooterItem: { flex: 1, alignItems: 'center' },
-  chartFooterSep: { width: 1, backgroundColor: '#f0f2f5' },
+  chartFooterSep: { width: 1, backgroundColor: COLORS.surfaceMuted },
   chartFooterLabel: { fontSize: 10, color: COLORS.gray, fontWeight: '600' },
   chartFooterValue: { fontSize: 14, color: COLORS.dark, fontWeight: '800', marginTop: 2 },
 
@@ -630,11 +631,11 @@ const styles = StyleSheet.create({
   insightCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     padding: 12,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -653,10 +654,10 @@ const styles = StyleSheet.create({
 
   /* Dealers */
   dealersCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     paddingHorizontal: 14,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -667,18 +668,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f2f5',
+    borderBottomColor: COLORS.surfaceMuted,
   },
   dealerRank: {
     width: 30,
     height: 30,
     borderRadius: 8,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: COLORS.surfaceMuted,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  dealerRankGold: { backgroundColor: '#fff4e0' },
+  dealerRankGold: { backgroundColor: COLORS.warningTint },
   dealerRankText: { fontSize: 13, fontWeight: '800', color: COLORS.gray },
   dealerName: { fontSize: 14, fontWeight: '700', color: COLORS.dark },
   dealerRevenue: { fontSize: 11, color: COLORS.gray, marginTop: 2, fontWeight: '600' },

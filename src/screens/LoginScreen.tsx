@@ -14,15 +14,11 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { useQueryClient } from '@tanstack/react-query';
-
 import { useAuthStore } from '../utils/store';
 import { COLORS } from '../constants';
-import { ENV } from '../config/env';
 import FordLogo from '../components/FordLogo';
 import { authService, UserRole } from '../services/auth.service';
 import { ApiError } from '../services/api';
-import { DemoRole, getDemoUser, seedDemoCache } from '../utils/demoMode';
 
 function mapApiRole(role: UserRole): 'client' | 'analyst' {
   return role === 'ANALYST' || role === 'ADMIN' ? 'analyst' : 'client';
@@ -35,36 +31,15 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setUser = useAuthStore((state) => state.setUser);
-  const qc = useQueryClient();
 
   const isValid = email.trim().length > 3 && email.includes('@') && password.length >= 6;
 
-  function enterDemo(role: DemoRole) {
-    const me = getDemoUser(role);
-    seedDemoCache(qc, role);
-    const mapped = mapApiRole(role);
-    setUser(
-      {
-        id: me.userId,
-        email: me.email,
-        name: me.fullName ?? me.email,
-        phone: me.phone ?? undefined,
-        role: mapped,
-        created_at: me.createdAt,
-      },
-      mapped
-    );
-    router.replace(mapped === 'analyst' ? '/(analyst)/dashboard' : '/(client)/home');
-  }
-
-  const handleLogin = async () => {
-    if (!isValid || loading) return;
-
+  const signIn = async (credentials: { email: string; password: string }) => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await authService.login({ email: email.trim(), password });
+      const data = await authService.login(credentials);
       const me = await authService.getMe();
 
       const role = mapApiRole(data.role);
@@ -97,6 +72,11 @@ export default function LoginScreen() {
     }
   };
 
+  const handleLogin = () => {
+    if (!isValid || loading) return;
+    void signIn({ email: email.trim(), password });
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -124,36 +104,6 @@ export default function LoginScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Acesse sua conta</Text>
           <Text style={styles.cardSubtitle}>Use o email e senha cadastrados</Text>
-
-          {ENV.DEMO_MODE && (
-            <View style={styles.demoBox}>
-              <View style={styles.demoHeadRow}>
-                <MaterialCommunityIcons name="flask-outline" size={16} color="#a36b00" />
-                <Text style={styles.demoTitle}>Modo demonstração</Text>
-              </View>
-              <Text style={styles.demoText}>
-                Backend indisponível: entre como Cliente ou Analista para navegar com dados de exemplo.
-              </Text>
-              <View style={styles.demoRow}>
-                <TouchableOpacity
-                  style={styles.demoBtn}
-                  onPress={() => enterDemo('CLIENT')}
-                  activeOpacity={0.85}
-                >
-                  <MaterialCommunityIcons name="account" size={16} color="#fff" />
-                  <Text style={styles.demoBtnText}>Cliente</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.demoBtn, styles.demoBtnSecondary]}
-                  onPress={() => enterDemo('ANALYST')}
-                  activeOpacity={0.85}
-                >
-                  <MaterialCommunityIcons name="chart-box" size={16} color={COLORS.primary} />
-                  <Text style={styles.demoBtnSecondaryText}>Analista</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
 
           {/* Email */}
           <Text style={styles.label}>Email</Text>
@@ -206,7 +156,7 @@ export default function LoginScreen() {
           {/* Error banner */}
           {error && (
             <View style={styles.errorBanner}>
-              <MaterialCommunityIcons name="alert-circle" size={16} color="#c62828" />
+              <MaterialCommunityIcons name="alert-circle" size={16} color={COLORS.dangerText} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -224,11 +174,11 @@ export default function LoginScreen() {
             activeOpacity={0.85}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={COLORS.white} size="small" />
             ) : (
               <>
                 <Text style={styles.ctaText}>Entrar</Text>
-                <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
+                <MaterialCommunityIcons name="arrow-right" size={20} color={COLORS.white} />
               </>
             )}
           </TouchableOpacity>
@@ -282,7 +232,7 @@ const styles = StyleSheet.create({
     paddingTop: 30,
   },
   heroTitle: {
-    color: '#fff',
+    color: COLORS.white,
     fontSize: 32,
     fontWeight: '800',
     letterSpacing: -0.5,
@@ -298,7 +248,7 @@ const styles = StyleSheet.create({
   /* Scroll */
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -32,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
@@ -311,10 +261,10 @@ const styles = StyleSheet.create({
 
   /* Card */
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 16,
@@ -344,7 +294,7 @@ const styles = StyleSheet.create({
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -354,8 +304,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   inputBoxError: {
-    borderColor: '#ea4335',
-    backgroundColor: '#fce8e6',
+    borderColor: COLORS.danger,
+    backgroundColor: COLORS.dangerTint,
   },
   input: {
     flex: 1,
@@ -365,61 +315,10 @@ const styles = StyleSheet.create({
   },
 
   /* Error */
-  /* Demo box */
-  demoBox: {
-    backgroundColor: '#fff8e6',
-    borderRadius: 14,
-    borderLeftWidth: 3,
-    borderLeftColor: '#f5a623',
-    padding: 14,
-    marginBottom: 18,
-  },
-  demoHeadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  demoTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#a36b00',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  demoText: {
-    fontSize: 12,
-    color: '#8c5a00',
-    lineHeight: 16,
-    marginBottom: 12,
-  },
-  demoRow: { flexDirection: 'row', gap: 8 },
-  demoBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 11,
-    borderRadius: 10,
-    gap: 6,
-  },
-  demoBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
-  demoBtnSecondary: {
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-  },
-  demoBtnSecondaryText: {
-    color: COLORS.primary,
-    fontWeight: '800',
-    fontSize: 13,
-  },
-
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fce8e6',
+    backgroundColor: COLORS.dangerTint,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -427,7 +326,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: {
-    color: '#c62828',
+    color: COLORS.dangerText,
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
@@ -461,11 +360,11 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   ctaDisabled: {
-    backgroundColor: '#c5cdd9',
+    backgroundColor: COLORS.borderStrong,
     shadowOpacity: 0,
   },
   ctaText: {
-    color: '#fff',
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -480,7 +379,7 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e5e8ec',
+    backgroundColor: COLORS.border,
   },
   dividerText: {
     fontSize: 11,
@@ -499,7 +398,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: COLORS.primary,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     gap: 10,
   },
   secondaryBtnText: {

@@ -19,15 +19,16 @@ import { useMyVehicles } from '../../hooks/useVehicles';
 import { useMyServices } from '../../hooks/useServices';
 import { useLoyaltyBalance } from '../../hooks/useLoyalty';
 import { WarrantyStatus } from '../../services/vehicles.service';
+import type { IconName } from '../../types';
 
 function warrantyMeta(status: WarrantyStatus) {
   switch (status) {
     case 'ACTIVE':
       return { label: 'Garantia ativa', color: COLORS.success };
     case 'EXPIRING_SOON':
-      return { label: 'Garantia vencendo', color: '#f5a623' };
+      return { label: 'Garantia vencendo', color: COLORS.warning };
     case 'EXPIRED':
-      return { label: 'Garantia vencida', color: '#ea4335' };
+      return { label: 'Garantia vencida', color: COLORS.danger };
   }
 }
 
@@ -67,7 +68,7 @@ export default function ProfileScreen() {
         <View style={styles.heroTop}>
           <Text style={styles.heroLabel}>Minha conta</Text>
           <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="pencil-outline" size={18} color="#fff" />
+            <MaterialCommunityIcons name="pencil-outline" size={18} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.profileName}>{me?.fullName ?? '—'}</Text>
           <View style={styles.profileTier}>
-            <MaterialCommunityIcons name="medal" size={12} color="#ffc966" />
+            <MaterialCommunityIcons name="medal" size={12} color={COLORS.warningStrong} />
             <Text style={styles.profileTierText}>
               Ford Gold{me?.createdAt && ` · Cliente desde ${new Date(me.createdAt).getFullYear()}`}
             </Text>
@@ -138,7 +139,7 @@ export default function ProfileScreen() {
           <MenuRow
             icon="calendar-clock"
             label="Meus agendamentos"
-            onPress={() => router.push('/appointments' as any)}
+            onPress={() => router.push('/appointments')}
           />
         </View>
 
@@ -241,7 +242,7 @@ export default function ProfileScreen() {
           onPress={handleLogout}
           activeOpacity={0.85}
         >
-          <MaterialCommunityIcons name="logout" size={18} color="#ea4335" />
+          <MaterialCommunityIcons name="logout" size={18} color={COLORS.danger} />
           <Text style={styles.logoutText}>Sair da conta</Text>
         </TouchableOpacity>
 
@@ -267,7 +268,7 @@ function InfoRow({
   value,
   action,
 }: {
-  icon: string;
+  icon: IconName;
   label: string;
   value: string;
   action?: boolean;
@@ -275,7 +276,7 @@ function InfoRow({
   return (
     <View style={styles.row}>
       <View style={styles.rowIcon}>
-        <MaterialCommunityIcons name={icon as any} size={18} color={COLORS.primary} />
+        <MaterialCommunityIcons name={icon} size={18} color={COLORS.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowLabel}>{label}</Text>
@@ -295,7 +296,7 @@ function ToggleRow({
   value,
   onChange,
 }: {
-  icon: string;
+  icon: IconName;
   label: string;
   sub: string;
   value: boolean;
@@ -304,7 +305,7 @@ function ToggleRow({
   return (
     <View style={styles.row}>
       <View style={styles.rowIcon}>
-        <MaterialCommunityIcons name={icon as any} size={18} color={COLORS.primary} />
+        <MaterialCommunityIcons name={icon} size={18} color={COLORS.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.rowLabel}>{label}</Text>
@@ -313,8 +314,8 @@ function ToggleRow({
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: '#dde1e6', true: COLORS.primary }}
-        thumbColor="#fff"
+        trackColor={{ false: COLORS.border, true: COLORS.primary }}
+        thumbColor={COLORS.white}
       />
     </View>
   );
@@ -327,7 +328,7 @@ function MenuRow({
   badgeColor,
   onPress,
 }: {
-  icon: string;
+  icon: IconName;
   label: string;
   badge?: string;
   badgeColor?: string;
@@ -336,7 +337,7 @@ function MenuRow({
   return (
     <TouchableOpacity style={styles.row} activeOpacity={0.85} onPress={onPress}>
       <View style={styles.rowIcon}>
-        <MaterialCommunityIcons name={icon as any} size={18} color={COLORS.primary} />
+        <MaterialCommunityIcons name={icon} size={18} color={COLORS.primary} />
       </View>
       <Text style={[styles.rowLabel, { flex: 1 }]}>{label}</Text>
       {badge && (
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  heroLabel: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  heroLabel: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
   iconBtn: {
     width: 36,
     height: 36,
@@ -412,7 +413,7 @@ const styles = StyleSheet.create({
     width: 78,
     height: 78,
     borderRadius: 39,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 4,
@@ -428,10 +429,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -2,
     right: -2,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 12,
   },
-  profileName: { color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 4 },
+  profileName: { color: COLORS.white, fontSize: 18, fontWeight: '800', marginBottom: 4 },
   profileTier: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16 },
   profileTierText: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '700' },
 
@@ -443,14 +444,14 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.15)',
   },
   profileStat: { flex: 1, alignItems: 'center' },
-  profileStatValue: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  profileStatValue: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
   profileStatLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600', marginTop: 2 },
   profileStatSep: { width: 1, backgroundColor: 'rgba(255,255,255,0.15)' },
 
   /* Scroll */
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -40,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -469,10 +470,10 @@ const styles = StyleSheet.create({
 
   /* Card */
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     paddingHorizontal: 14,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -487,7 +488,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 14, fontWeight: '700', color: COLORS.dark },
   rowValue: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
   rowSub: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
-  divider: { height: 1, backgroundColor: '#f0f2f5', marginLeft: 48 },
+  divider: { height: 1, backgroundColor: COLORS.surfaceMuted, marginLeft: 48 },
 
   miniBadge: {
     paddingHorizontal: 8,
@@ -509,10 +510,10 @@ const styles = StyleSheet.create({
   vehicleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     padding: 14,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -523,7 +524,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 14,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -531,7 +532,7 @@ const styles = StyleSheet.create({
   vehicleTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   vehicleName: { fontSize: 15, fontWeight: '800', color: COLORS.dark },
   vehicleDefault: {
-    backgroundColor: '#e8efff',
+    backgroundColor: COLORS.primaryTintStrong,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 5,
@@ -551,7 +552,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.primary,
     borderStyle: 'dashed',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     gap: 6,
   },
   addVehicleBtnText: { color: COLORS.primary, fontWeight: '800', fontSize: 13 },
@@ -563,13 +564,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 14,
     borderRadius: 14,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     marginTop: 24,
     gap: 8,
     borderWidth: 1.5,
-    borderColor: '#fce8e6',
+    borderColor: COLORS.dangerTint,
   },
-  logoutText: { color: '#ea4335', fontWeight: '800', fontSize: 14 },
+  logoutText: { color: COLORS.danger, fontWeight: '800', fontSize: 14 },
 
   versionText: {
     textAlign: 'center',

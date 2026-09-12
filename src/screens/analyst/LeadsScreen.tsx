@@ -13,7 +13,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { COLORS } from '../../constants';
+import { COLORS, ACCENTS } from '../../constants';
 import { useCreateLeadAction, useLeads } from '../../hooks/useLeads';
 import { Lead, LeadStatus } from '../../services/leads.service';
 import { ApiError } from '../../services/api';
@@ -28,15 +28,15 @@ const API_TO_UI: Record<LeadStatus, Exclude<UiStatus, 'all'>> = {
 };
 
 const STATUS_META: Record<Exclude<UiStatus, 'all'>, { label: string; color: string; bg: string }> = {
-  lost: { label: 'Perdido', color: '#ea4335', bg: '#fce8e6' },
-  risk: { label: 'Em risco', color: '#a36b00', bg: '#fff4e0' },
-  new: { label: 'Novo', color: COLORS.secondary, bg: '#e8efff' },
-  recovered: { label: 'Recuperado', color: COLORS.success, bg: '#e9f7ee' },
+  lost: { label: 'Perdido', color: COLORS.danger, bg: COLORS.dangerTint },
+  risk: { label: 'Em risco', color: COLORS.warningText, bg: COLORS.warningTint },
+  new: { label: 'Novo', color: COLORS.secondary, bg: COLORS.primaryTintStrong },
+  recovered: { label: 'Recuperado', color: COLORS.success, bg: COLORS.successTint },
 };
 
 const FILTER_ORDER: UiStatus[] = ['all', 'lost', 'risk', 'new', 'recovered'];
 
-const AVATAR_COLORS = ['#5e35b1', '#e91e63', '#ff7043', '#1e8e3e', COLORS.primary, '#00897b', '#8e24aa'];
+const AVATAR_COLORS = [ACCENTS.violet, ACCENTS.pink, ACCENTS.coral, COLORS.success, COLORS.primary, ACCENTS.teal, ACCENTS.purpleDark];
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -99,7 +99,7 @@ export default function LeadsScreen() {
             <MaterialCommunityIcons
               name={isRefetching ? 'loading' : 'refresh'}
               size={20}
-              color="#fff"
+              color={COLORS.white}
             />
           </TouchableOpacity>
         </View>
@@ -151,7 +151,7 @@ export default function LeadsScreen() {
                   {meta.label}
                 </Text>
                 <View style={[styles.filterCount, active && { backgroundColor: meta.color }]}>
-                  <Text style={[styles.filterCountText, active && { color: '#fff' }]}>
+                  <Text style={[styles.filterCountText, active && { color: COLORS.white }]}>
                     {counts[id]}
                   </Text>
                 </View>
@@ -179,7 +179,7 @@ export default function LeadsScreen() {
 
         {error && !isLoading && (
           <View style={styles.stateBox}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={36} color="#ea4335" />
+            <MaterialCommunityIcons name="alert-circle-outline" size={36} color={COLORS.danger} />
             <Text style={styles.stateTitle}>Falha ao carregar leads</Text>
             <Text style={styles.stateText}>
               {error instanceof ApiError
@@ -254,7 +254,7 @@ function LeadCard({ lead }: { lead: Lead }) {
     <TouchableOpacity
       style={styles.leadCard}
       activeOpacity={0.9}
-      onPress={() => router.push(`/customers/${lead.customerId}` as any)}
+      onPress={() => router.push({ pathname: '/customers/[customerId]', params: { customerId: lead.customerId } })}
     >
       <View style={styles.leadHead}>
         <View style={[styles.leadAvatar, { backgroundColor: color }]}>
@@ -303,7 +303,7 @@ function LeadCard({ lead }: { lead: Lead }) {
           <>
             <View style={styles.leadStatSep} />
             <View style={styles.leadStat}>
-              <MaterialCommunityIcons name="star" size={12} color="#f5a623" />
+              <MaterialCommunityIcons name="star" size={12} color={COLORS.warning} />
               <Text style={styles.leadStatText}>NPS {lead.lastNpsScore}</Text>
             </View>
           </>
@@ -312,7 +312,7 @@ function LeadCard({ lead }: { lead: Lead }) {
 
       {lead.suggestedAction && (
         <View style={styles.suggestion}>
-          <MaterialCommunityIcons name="lightbulb-on-outline" size={13} color="#a36b00" />
+          <MaterialCommunityIcons name="lightbulb-on-outline" size={13} color={COLORS.warningText} />
           <Text style={styles.suggestionText}>{lead.suggestedAction}</Text>
         </View>
       )}
@@ -324,7 +324,7 @@ function LeadCard({ lead }: { lead: Lead }) {
           onPress={triggerCall}
           disabled={action.isPending}
         >
-          <MaterialCommunityIcons name="phone" size={16} color="#fff" />
+          <MaterialCommunityIcons name="phone" size={16} color={COLORS.white} />
           <Text style={styles.actionPrimaryText}>Ligar</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -339,7 +339,7 @@ function LeadCard({ lead }: { lead: Lead }) {
         <TouchableOpacity
           style={styles.actionIcon}
           activeOpacity={0.85}
-          onPress={() => router.push(`/customers/${lead.customerId}` as any)}
+          onPress={() => router.push({ pathname: '/customers/[customerId]', params: { customerId: lead.customerId } })}
         >
           <MaterialCommunityIcons name="account-details" size={18} color={COLORS.gray} />
         </TouchableOpacity>
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
   },
-  heroTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginTop: 4 },
+  heroTitle: { color: COLORS.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
   iconBtn: {
     width: 40,
     height: 40,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
 
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -28,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -415,16 +415,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 20,
     gap: 6,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   filterDot: { width: 6, height: 6, borderRadius: 3 },
   filterText: { fontSize: 13, fontWeight: '700', color: COLORS.gray },
   filterCount: {
-    backgroundColor: '#f0f2f5',
+    backgroundColor: COLORS.surfaceMuted,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -445,12 +445,12 @@ const styles = StyleSheet.create({
   sortText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
 
   leadCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 14,
     marginHorizontal: 20,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  leadAvatarText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  leadAvatarText: { color: COLORS.white, fontSize: 14, fontWeight: '800' },
   leadName: { fontSize: 15, fontWeight: '800', color: COLORS.dark },
   leadMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 3, gap: 4 },
   leadMetaText: { fontSize: 11, color: COLORS.gray },
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   scoreBar: {
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: COLORS.surfaceMuted,
     overflow: 'hidden',
   },
   scoreFill: { height: '100%', borderRadius: 3 },
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   leadStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fafbfc',
+    backgroundColor: COLORS.surfaceMuted,
     borderRadius: 10,
     paddingVertical: 8,
     marginBottom: 12,
@@ -502,19 +502,19 @@ const styles = StyleSheet.create({
   leadStat: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   leadStatText: { fontSize: 12, fontWeight: '700', color: COLORS.dark },
   leadStatSub: { fontSize: 10, color: COLORS.gray, marginLeft: 1 },
-  leadStatSep: { width: 1, height: 16, backgroundColor: '#e6e8eb' },
+  leadStatSep: { width: 1, height: 16, backgroundColor: COLORS.border },
 
   suggestion: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 6,
-    backgroundColor: '#fff8e6',
+    backgroundColor: COLORS.warningTint,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginBottom: 12,
   },
-  suggestionText: { flex: 1, fontSize: 11, color: '#8c5a00', fontWeight: '600', lineHeight: 15 },
+  suggestionText: { flex: 1, fontSize: 11, color: COLORS.warningText, fontWeight: '600', lineHeight: 15 },
 
   leadActions: { flexDirection: 'row', gap: 8 },
   actionPrimary: {
@@ -527,13 +527,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
   },
-  actionPrimaryText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  actionPrimaryText: { color: COLORS.white, fontWeight: '800', fontSize: 13 },
   actionSecondary: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#e8efff',
+    backgroundColor: COLORS.primaryTintStrong,
     paddingVertical: 10,
     borderRadius: 10,
     gap: 6,
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 4,
   },
-  retryText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  retryText: { color: COLORS.white, fontWeight: '800', fontSize: 13 },
 
   emptyState: {
     alignItems: 'center',

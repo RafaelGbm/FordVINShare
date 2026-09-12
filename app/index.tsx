@@ -64,7 +64,7 @@ export default function Index() {
     return (
       <View style={styles.splash}>
         <FordLogo width={200} height={80} />
-        <ActivityIndicator size="small" color="#fff" style={{ marginTop: 24 }} />
+        <ActivityIndicator size="small" color={COLORS.white} style={{ marginTop: 24 }} />
       </View>
     );
   }

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { COLORS } from '../../constants';
+import { COLORS, ACCENT_TINTS, ACCENTS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
 import {
   useLoyaltyBalance,
@@ -29,10 +29,10 @@ const CATEGORIES = [
 ];
 
 const REWARD_BG_BY_CATEGORY: Record<string, { bg: string; color: string }> = {
-  SERVICE: { bg: '#e8efff', color: COLORS.primary },
-  PARTS: { bg: '#fdf0e6', color: '#ff7043' },
-  LIFESTYLE: { bg: '#fce4ec', color: '#e91e63' },
-  DEFAULT: { bg: '#e9f7ee', color: '#1e8e3e' },
+  SERVICE: { bg: COLORS.primaryTintStrong, color: COLORS.primary },
+  PARTS: { bg: ACCENT_TINTS.coral, color: ACCENTS.coral },
+  LIFESTYLE: { bg: ACCENT_TINTS.pink, color: ACCENTS.pink },
+  DEFAULT: { bg: COLORS.successTint, color: COLORS.success },
 };
 
 function tierFor(balance: number) {
@@ -130,7 +130,7 @@ export default function PointsScreen() {
             <Text style={styles.heroTitle}>Ford Points</Text>
           </View>
           <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="information-outline" size={20} color="#fff" />
+            <MaterialCommunityIcons name="information-outline" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
@@ -141,7 +141,7 @@ export default function PointsScreen() {
               <Text style={styles.pointsLabel}>Saldo disponível</Text>
               <View style={styles.pointsValueRow}>
                 {balanceQuery.isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={COLORS.white} size="small" />
                 ) : (
                   <>
                     <Text style={styles.pointsValue}>{balance.toLocaleString('pt-BR')}</Text>
@@ -155,7 +155,7 @@ export default function PointsScreen() {
 
           <View style={styles.tierRow}>
             <View style={styles.tierBadge}>
-              <MaterialCommunityIcons name="medal" size={14} color="#f5a623" />
+              <MaterialCommunityIcons name="medal" size={14} color={COLORS.warning} />
               <Text style={styles.tierText}>{tier.name}</Text>
             </View>
             {tier.nextLabel ? (
@@ -188,12 +188,12 @@ export default function PointsScreen() {
             <Text style={styles.statLabel}>este mês</Text>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="gift-outline" size={20} color="#ff7043" />
+            <MaterialCommunityIcons name="gift-outline" size={20} color={ACCENTS.coral} />
             <Text style={styles.statValue}>{totalRedemptions}</Text>
             <Text style={styles.statLabel}>resgates</Text>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="clock-alert-outline" size={20} color="#f5a623" />
+            <MaterialCommunityIcons name="clock-alert-outline" size={20} color={COLORS.warning} />
             <Text style={styles.statValue}>
               {expiringIn30Days > 0 ? expiringIn30Days.toLocaleString('pt-BR') : '–'}
             </Text>
@@ -205,7 +205,7 @@ export default function PointsScreen() {
         {expiringIn30Days > 0 && (
           <View style={styles.earnBox}>
             <View style={styles.earnIcon}>
-              <MaterialCommunityIcons name="clock-alert" size={20} color="#f5a623" />
+              <MaterialCommunityIcons name="clock-alert" size={20} color={COLORS.warning} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.earnTitle}>Pontos próximos do vencimento</Text>
@@ -287,7 +287,7 @@ export default function PointsScreen() {
                   </Text>
                   <View style={styles.rewardFoot}>
                     <View style={styles.rewardPoints}>
-                      <MaterialCommunityIcons name="circle" size={6} color="#f5a623" />
+                      <MaterialCommunityIcons name="circle" size={6} color={COLORS.warning} />
                       <Text style={styles.rewardPointsText}>
                         {r.pointsCost.toLocaleString('pt-BR')} pts
                       </Text>
@@ -338,13 +338,13 @@ export default function PointsScreen() {
               <View
                 style={[
                   styles.historyIcon,
-                  { backgroundColor: h.type === 'EARN' ? '#e9f7ee' : '#fce8e6' },
+                  { backgroundColor: h.type === 'EARN' ? COLORS.successTint : COLORS.dangerTint },
                 ]}
               >
                 <MaterialCommunityIcons
                   name={h.type === 'EARN' ? 'arrow-up' : 'arrow-down'}
                   size={16}
-                  color={h.type === 'EARN' ? COLORS.success : '#ea4335'}
+                  color={h.type === 'EARN' ? COLORS.success : COLORS.danger}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -354,7 +354,7 @@ export default function PointsScreen() {
               <Text
                 style={[
                   styles.historyPoints,
-                  { color: h.type === 'EARN' ? COLORS.success : '#ea4335' },
+                  { color: h.type === 'EARN' ? COLORS.success : COLORS.danger },
                 ]}
               >
                 {h.points > 0 ? '+' : ''}
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
   },
-  heroTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginTop: 4 },
+  heroTitle: { color: COLORS.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
   iconBtn: {
     width: 40,
     height: 40,
@@ -443,8 +443,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   pointsValueRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 4, gap: 6 },
-  pointsValue: { color: '#fff', fontSize: 38, fontWeight: '800', letterSpacing: -1 },
-  pointsUnit: { color: '#fff', fontSize: 14, fontWeight: '700', marginBottom: 8 },
+  pointsValue: { color: COLORS.white, fontSize: 38, fontWeight: '800', letterSpacing: -1 },
+  pointsUnit: { color: COLORS.white, fontSize: 14, fontWeight: '700', marginBottom: 8 },
 
   tierRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   tierBadge: {
@@ -456,16 +456,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 4,
   },
-  tierText: { fontSize: 12, fontWeight: '800', color: '#ffc966' },
+  tierText: { fontSize: 12, fontWeight: '800', color: COLORS.warningStrong },
   tierGoal: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
 
   tierBar: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
-  tierFill: { height: '100%', backgroundColor: '#ffc966', borderRadius: 3 },
+  tierFill: { height: '100%', backgroundColor: COLORS.warningStrong, borderRadius: 3 },
 
   /* Scroll */
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -50,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -481,11 +481,11 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     padding: 14,
     borderRadius: 14,
     alignItems: 'flex-start',
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -498,25 +498,25 @@ const styles = StyleSheet.create({
   earnBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff8e6',
+    backgroundColor: COLORS.warningTint,
     marginHorizontal: 20,
     padding: 14,
     borderRadius: 14,
     marginBottom: 18,
     borderLeftWidth: 4,
-    borderLeftColor: '#f5a623',
+    borderLeftColor: COLORS.warning,
   },
   earnIcon: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  earnTitle: { fontSize: 14, fontWeight: '800', color: '#a36b00' },
-  earnText: { fontSize: 12, color: '#8c5a00', marginTop: 2 },
+  earnTitle: { fontSize: 14, fontWeight: '800', color: COLORS.warningText },
+  earnText: { fontSize: 12, color: COLORS.warningText, marginTop: 2 },
 
   /* Section */
   sectionHead: {
@@ -534,22 +534,22 @@ const styles = StyleSheet.create({
   catChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   catChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   catText: { fontSize: 12, fontWeight: '700', color: COLORS.gray },
-  catTextActive: { color: '#fff' },
+  catTextActive: { color: COLORS.white },
 
   /* Reward Card */
   rewardCard: {
     width: 200,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
-  rewardTagText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  rewardTagText: { fontSize: 9, fontWeight: '800', color: COLORS.white, letterSpacing: 0.5 },
   rewardBody: { padding: 12 },
   rewardName: { fontSize: 14, fontWeight: '800', color: COLORS.dark },
   rewardDesc: { fontSize: 11, color: COLORS.gray, marginTop: 4, minHeight: 28 },
@@ -580,24 +580,24 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   rewardPoints: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rewardPointsText: { fontSize: 13, fontWeight: '800', color: '#a36b00' },
+  rewardPointsText: { fontSize: 13, fontWeight: '800', color: COLORS.warningText },
   rewardBtn: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
   },
-  rewardBtnDisabled: { backgroundColor: '#e8eaed' },
-  rewardBtnText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  rewardBtnDisabled: { backgroundColor: COLORS.border },
+  rewardBtnText: { color: COLORS.white, fontSize: 11, fontWeight: '800' },
   rewardBtnTextDisabled: { color: COLORS.gray },
 
   /* History */
   historyCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     marginHorizontal: 20,
     borderRadius: 16,
     paddingHorizontal: 14,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f2f5',
+    borderBottomColor: COLORS.surfaceMuted,
   },
   historyIcon: {
     width: 36,

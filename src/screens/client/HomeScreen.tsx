@@ -11,7 +11,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { COLORS } from '../../constants';
+import { COLORS, ACCENT_TINTS, ACCENTS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
 import { StateBox } from '../../components/StateBox';
 import { useMe } from '../../hooks/useAuth';
@@ -20,6 +20,7 @@ import { useMyServices } from '../../hooks/useServices';
 import { usePendingSurveys } from '../../hooks/useNps';
 import { ServiceType } from '../../services/services.service';
 import { WarrantyStatus } from '../../services/vehicles.service';
+import type { IconName } from '../../types';
 
 const { width } = Dimensions.get('window');
 
@@ -30,7 +31,7 @@ const SERVICE_TYPE_LABEL: Record<ServiceType, string> = {
   REPAIR: 'Reparo',
 };
 
-const SERVICE_TYPE_ICON: Record<ServiceType, string> = {
+const SERVICE_TYPE_ICON: Record<ServiceType, IconName> = {
   REVIEW: 'wrench',
   OIL_CHANGE: 'oil',
   WARRANTY: 'shield-check',
@@ -41,7 +42,7 @@ const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
   REVIEW: COLORS.success,
   OIL_CHANGE: COLORS.secondary,
   WARRANTY: COLORS.primary,
-  REPAIR: '#9c27b0',
+  REPAIR: ACCENTS.purple,
 };
 
 const WARRANTY_LABEL: Record<WarrantyStatus, string> = {
@@ -90,7 +91,7 @@ export default function HomeScreen() {
         <View style={styles.heroTop}>
           <FordLogo width={110} height={44} />
           <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="bell-outline" size={22} color="#fff" />
+            <MaterialCommunityIcons name="bell-outline" size={22} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
@@ -146,7 +147,7 @@ export default function HomeScreen() {
               </View>
               <TouchableOpacity
                 style={styles.vehicleIcon}
-                onPress={() => router.push(`/odometer/${vehicle.id}` as any)}
+                onPress={() => router.push({ pathname: '/odometer/[vehicleId]', params: { vehicleId: vehicle.id } })}
                 activeOpacity={0.85}
               >
                 <MaterialCommunityIcons name="speedometer" size={32} color={COLORS.primary} />
@@ -177,8 +178,8 @@ export default function HomeScreen() {
                         vehicle.warrantyStatus === 'ACTIVE'
                           ? COLORS.success
                           : vehicle.warrantyStatus === 'EXPIRING_SOON'
-                            ? '#f5a623'
-                            : '#ea4335',
+                            ? COLORS.warning
+                            : COLORS.danger,
                     },
                   ]}
                 >
@@ -196,7 +197,7 @@ export default function HomeScreen() {
                     <MaterialCommunityIcons
                       name="shield-check"
                       size={16}
-                      color={warranty.status === 'ACTIVE' ? COLORS.success : '#f5a623'}
+                      color={warranty.status === 'ACTIVE' ? COLORS.success : COLORS.warning}
                     />
                     <Text style={styles.warrantyLabel}>Garantia Ford Plus</Text>
                   </View>
@@ -217,7 +218,7 @@ export default function HomeScreen() {
         {firstAlert && (
           <View style={styles.alert}>
             <View style={styles.alertIcon}>
-              <MaterialCommunityIcons name="wrench-clock" size={22} color="#fff" />
+              <MaterialCommunityIcons name="wrench-clock" size={22} color={COLORS.white} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.alertTitle}>{firstAlert.title}</Text>
@@ -233,12 +234,12 @@ export default function HomeScreen() {
 
         {pendingSurvey && (
           <TouchableOpacity
-            style={[styles.alert, { backgroundColor: '#f5a623' }]}
+            style={[styles.alert, { backgroundColor: COLORS.warning }]}
             activeOpacity={0.85}
-            onPress={() => router.push(`/nps/${pendingSurvey.serviceId}` as any)}
+            onPress={() => router.push({ pathname: '/nps/[serviceId]', params: { serviceId: pendingSurvey.serviceId } })}
           >
             <View style={styles.alertIcon}>
-              <MaterialCommunityIcons name="star-outline" size={22} color="#fff" />
+              <MaterialCommunityIcons name="star-outline" size={22} color={COLORS.white} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.alertTitle}>Avalie seu último serviço</Text>
@@ -247,7 +248,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <View style={styles.alertCta}>
-              <MaterialCommunityIcons name="arrow-right" size={18} color="#f5a623" />
+              <MaterialCommunityIcons name="arrow-right" size={18} color={COLORS.warning} />
             </View>
           </TouchableOpacity>
         )}
@@ -256,7 +257,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Acesso rápido</Text>
         <View style={styles.quickGrid}>
           <TouchableOpacity style={styles.quickCard} activeOpacity={0.85}>
-            <View style={[styles.quickIcon, { backgroundColor: '#e8efff' }]}>
+            <View style={[styles.quickIcon, { backgroundColor: COLORS.primaryTintStrong }]}>
               <MaterialCommunityIcons name="calendar-plus" size={26} color={COLORS.primary} />
             </View>
             <Text style={styles.quickLabel}>Agendar</Text>
@@ -264,24 +265,24 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickCard} activeOpacity={0.85}>
-            <View style={[styles.quickIcon, { backgroundColor: '#fdf0e6' }]}>
-              <MaterialCommunityIcons name="map-marker-radius" size={26} color="#ff7043" />
+            <View style={[styles.quickIcon, { backgroundColor: ACCENT_TINTS.coral }]}>
+              <MaterialCommunityIcons name="map-marker-radius" size={26} color={ACCENTS.coral} />
             </View>
             <Text style={styles.quickLabel}>Localizar</Text>
             <Text style={styles.quickSub}>concessionária</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickCard} activeOpacity={0.85}>
-            <View style={[styles.quickIcon, { backgroundColor: '#e9f7ee' }]}>
-              <MaterialCommunityIcons name="robot-excited-outline" size={26} color="#1e8e3e" />
+            <View style={[styles.quickIcon, { backgroundColor: COLORS.successTint }]}>
+              <MaterialCommunityIcons name="robot-excited-outline" size={26} color={COLORS.success} />
             </View>
             <Text style={styles.quickLabel}>Assistente</Text>
             <Text style={styles.quickSub}>Ford AI</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickCard} activeOpacity={0.85}>
-            <View style={[styles.quickIcon, { backgroundColor: '#fff4e0' }]}>
-              <MaterialCommunityIcons name="trophy-outline" size={26} color="#f5a623" />
+            <View style={[styles.quickIcon, { backgroundColor: COLORS.warningTint }]}>
+              <MaterialCommunityIcons name="trophy-outline" size={26} color={COLORS.warning} />
             </View>
             <Text style={styles.quickLabel}>Pontos</Text>
             <Text style={styles.quickSub}>2.450 disp.</Text>
@@ -312,9 +313,9 @@ export default function HomeScreen() {
               <View style={styles.timelineDotCol}>
                 <View style={[styles.timelineDot, { backgroundColor: SERVICE_TYPE_COLOR[service.serviceType] }]}>
                   <MaterialCommunityIcons
-                    name={SERVICE_TYPE_ICON[service.serviceType] as any}
+                    name={SERVICE_TYPE_ICON[service.serviceType]}
                     size={14}
-                    color="#fff"
+                    color={COLORS.white}
                   />
                 </View>
                 {i < arr.length - 1 && <View style={styles.timelineLine} />}
@@ -414,7 +415,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   heroHello: {
-    color: '#fff',
+    color: COLORS.white,
     fontSize: 26,
     fontWeight: '800',
   },
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
   /* Scroll */
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -30,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -440,11 +441,11 @@ const styles = StyleSheet.create({
 
   /* Vehicle Card */
   vehicleCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 20,
     padding: 18,
     marginBottom: 14,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -477,13 +478,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 16,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: '#fafbfc',
+    backgroundColor: COLORS.surfaceMuted,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 4,
@@ -506,11 +507,11 @@ const styles = StyleSheet.create({
   },
   statSep: {
     width: 1,
-    backgroundColor: '#e6e8eb',
+    backgroundColor: COLORS.border,
     marginVertical: 4,
   },
   warrantyBlock: {
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     borderRadius: 14,
     padding: 14,
   },
@@ -533,7 +534,7 @@ const styles = StyleSheet.create({
   warrantyBar: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#dde6f7',
+    backgroundColor: COLORS.primaryTintStrong,
     overflow: 'hidden',
   },
   warrantyFill: {
@@ -552,7 +553,7 @@ const styles = StyleSheet.create({
   alert: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0a4bb8',
+    backgroundColor: COLORS.primaryBright,
     borderRadius: 16,
     padding: 14,
     marginBottom: 18,
@@ -567,7 +568,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   alertTitle: {
-    color: '#fff',
+    color: COLORS.white,
     fontSize: 14,
     fontWeight: '800',
   },
@@ -580,7 +581,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -608,10 +609,10 @@ const styles = StyleSheet.create({
   },
   quickCard: {
     width: (width - 32 - 10) / 2,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -664,17 +665,17 @@ const styles = StyleSheet.create({
   timelineLine: {
     flex: 1,
     width: 2,
-    backgroundColor: '#e6e8eb',
+    backgroundColor: COLORS.border,
     marginVertical: 4,
   },
   timelineCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
     marginLeft: 8,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -747,7 +748,7 @@ const styles = StyleSheet.create({
   promoTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#fff',
+    color: COLORS.white,
     marginBottom: 6,
   },
   promoText: {
@@ -760,7 +761,7 @@ const styles = StyleSheet.create({
   promoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,

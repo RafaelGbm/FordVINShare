@@ -16,12 +16,13 @@ import { StateBox } from '../../components/StateBox';
 import { useDealerships } from '../../hooks/useDealerships';
 import { useUserLocation } from '../../hooks/useUserLocation';
 import { ServiceType } from '../../services/services.service';
+import type { IconName } from '../../types';
 
 const { width } = Dimensions.get('window');
 
 type FilterId = 'all' | ServiceType;
 
-const FILTERS: { id: FilterId; label: string; icon: string }[] = [
+const FILTERS: { id: FilterId; label: string; icon: IconName }[] = [
   { id: 'all', label: 'Todas', icon: 'view-grid' },
   { id: 'REVIEW', label: 'Revisão', icon: 'wrench' },
   { id: 'OIL_CHANGE', label: 'Óleo', icon: 'oil' },
@@ -78,7 +79,7 @@ export default function LocatorScreen() {
             <Text style={styles.heroTitle}>Concessionárias Ford</Text>
           </View>
           <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="tune-variant" size={20} color="#fff" />
+            <MaterialCommunityIcons name="tune-variant" size={20} color={COLORS.white} />
           </TouchableOpacity>
         </View>
 
@@ -103,7 +104,7 @@ export default function LocatorScreen() {
       >
         {location.isFallback && location.status === 'denied' && (
           <View style={styles.locationBanner}>
-            <MaterialCommunityIcons name="map-marker-off-outline" size={18} color="#a36b00" />
+            <MaterialCommunityIcons name="map-marker-off-outline" size={18} color={COLORS.warningText} />
             <Text style={styles.locationBannerText}>
               Permissão de localização negada · usando São Paulo como referência
             </Text>
@@ -184,9 +185,9 @@ export default function LocatorScreen() {
                 activeOpacity={0.85}
               >
                 <MaterialCommunityIcons
-                  name={f.icon as any}
+                  name={f.icon}
                   size={14}
-                  color={active ? '#fff' : COLORS.gray}
+                  color={active ? COLORS.white : COLORS.gray}
                 />
                 <Text style={[styles.filterText, active && styles.filterTextActive]}>
                   {f.label}
@@ -274,7 +275,7 @@ export default function LocatorScreen() {
 
               <View style={styles.actionsRow}>
                 <TouchableOpacity style={styles.actionBtnPrimary} activeOpacity={0.85}>
-                  <MaterialCommunityIcons name="directions" size={18} color="#fff" />
+                  <MaterialCommunityIcons name="directions" size={18} color={COLORS.white} />
                   <Text style={styles.actionBtnPrimaryText}>Rota</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionBtnSecondary} activeOpacity={0.85}>
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
   },
-  heroTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginTop: 4 },
+  heroTitle: { color: COLORS.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
   iconBtn: {
     width: 40,
     height: 40,
@@ -340,7 +341,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
@@ -351,7 +352,7 @@ const styles = StyleSheet.create({
   /* Scroll */
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -28,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -362,26 +363,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#fff4e0',
+    backgroundColor: COLORS.warningTint,
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 10,
     borderRadius: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#f5a623',
+    borderLeftColor: COLORS.warning,
   },
   locationBannerText: {
     flex: 1,
     fontSize: 11,
     fontWeight: '600',
-    color: '#a36b00',
+    color: COLORS.warningText,
   },
 
   /* Map */
   mapBox: {
     marginHorizontal: 20,
     height: 220,
-    backgroundColor: '#e6ecf2',
+    backgroundColor: COLORS.border,
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
@@ -395,7 +396,7 @@ const styles = StyleSheet.create({
     left: -20,
     right: -20,
     height: 14,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     transform: [{ rotate: '-8deg' }],
   },
   mapRoad2: {
@@ -404,7 +405,7 @@ const styles = StyleSheet.create({
     left: -20,
     right: -20,
     height: 10,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     transform: [{ rotate: '5deg' }],
   },
   mapRoad3: {
@@ -413,7 +414,7 @@ const styles = StyleSheet.create({
     bottom: -20,
     left: width / 2 - 30,
     width: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     transform: [{ rotate: '12deg' }],
   },
   mapPin: { position: 'absolute', alignItems: 'center' },
@@ -429,15 +430,15 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#1a73e8',
+    backgroundColor: COLORS.secondary,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: COLORS.white,
   },
   userPinLabel: {
     fontSize: 8,
     fontWeight: '800',
-    color: '#1a73e8',
-    backgroundColor: '#fff',
+    color: COLORS.secondary,
+    backgroundColor: COLORS.white,
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
@@ -449,28 +450,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 10,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   mapControlBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-  mapControlDivider: { height: 1, backgroundColor: '#eef0f3' },
+  mapControlDivider: { height: 1, backgroundColor: COLORS.surfaceAlt },
   expandBtn: {
     position: 'absolute',
     bottom: 12,
     left: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
-    shadowColor: '#000',
+    shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -485,19 +486,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 20,
     marginRight: 8,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   filterChipActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
   filterText: { fontSize: 13, fontWeight: '700', color: COLORS.gray },
-  filterTextActive: { color: '#fff' },
+  filterTextActive: { color: COLORS.white },
 
   /* List */
   listHead: {
@@ -513,13 +514,13 @@ const styles = StyleSheet.create({
 
   /* Dealer Card */
   dealerCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 14,
     marginHorizontal: 20,
     marginBottom: 10,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   dealerCardActive: { borderColor: COLORS.primary },
   dealerHead: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
@@ -527,7 +528,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -538,7 +539,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: COLORS.primary,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -546,24 +547,24 @@ const styles = StyleSheet.create({
   premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff4e0',
+    backgroundColor: COLORS.warningTint,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 5,
     gap: 3,
   },
-  premiumText: { fontSize: 9, fontWeight: '800', color: '#a36b00', letterSpacing: 0.3 },
+  premiumText: { fontSize: 9, fontWeight: '800', color: COLORS.warningText, letterSpacing: 0.3 },
 
   dealerMeta: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   metaText: { fontSize: 12, fontWeight: '700', color: COLORS.dark },
   metaSub: { color: COLORS.gray, fontWeight: '500' },
-  metaDivider: { width: 1, height: 12, backgroundColor: '#e6e8eb' },
+  metaDivider: { width: 1, height: 12, backgroundColor: COLORS.border },
   statusDot: { width: 7, height: 7, borderRadius: 3.5 },
 
   servicesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   serviceChip: {
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -581,13 +582,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
-  actionBtnPrimaryText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  actionBtnPrimaryText: { color: COLORS.white, fontWeight: '800', fontSize: 13 },
   actionBtnSecondary: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     paddingVertical: 10,
     borderRadius: 12,
     gap: 6,
@@ -597,7 +598,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },

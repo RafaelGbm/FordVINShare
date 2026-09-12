@@ -10,6 +10,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS } from '../constants';
+import type { IconName } from '../types';
 
 type Variant = 'loading' | 'error' | 'empty';
 
@@ -17,13 +18,13 @@ interface StateBoxProps {
   variant: Variant;
   title?: string;
   message?: string;
-  iconName?: string;
+  iconName?: IconName;
   onRetry?: () => void;
   retryLabel?: string;
   style?: ViewStyle;
 }
 
-const DEFAULT_ICON: Record<Variant, string | null> = {
+const DEFAULT_ICON: Record<Variant, IconName | null> = {
   loading: null,
   error: 'alert-circle-outline',
   empty: 'tray-remove',
@@ -51,9 +52,9 @@ export function StateBox({
         <ActivityIndicator color={COLORS.primary} />
       ) : icon ? (
         <MaterialCommunityIcons
-          name={icon as any}
+          name={icon}
           size={36}
-          color={variant === 'error' ? '#ea4335' : COLORS.border}
+          color={variant === 'error' ? COLORS.danger : COLORS.border}
         />
       ) : null}
 
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   retryText: {
-    color: '#fff',
+    color: COLORS.white,
     fontWeight: '800',
     fontSize: 13,
   },

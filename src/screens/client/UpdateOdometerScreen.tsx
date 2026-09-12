@@ -64,7 +64,7 @@ export default function UpdateOdometerScreen() {
         <View style={styles.heroBlob} />
         <View style={styles.heroTop}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="close" size={22} color="#fff" />
+            <MaterialCommunityIcons name="close" size={22} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={styles.heroTitle}>Atualizar km</Text>
           <View style={{ width: 40 }} />
@@ -132,10 +132,10 @@ export default function UpdateOdometerScreen() {
               activeOpacity={0.85}
             >
               {updateMutation.isPending ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={COLORS.white} size="small" />
               ) : (
                 <>
-                  <MaterialCommunityIcons name="check" size={18} color="#fff" />
+                  <MaterialCommunityIcons name="check" size={18} color={COLORS.white} />
                   <Text style={styles.ctaText}>Salvar</Text>
                 </>
               )}
@@ -180,12 +180,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
   heroSub: { color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 18 },
 
   body: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 20,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   vehicleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 14,
     marginTop: 8,
@@ -214,11 +214,11 @@ const styles = StyleSheet.create({
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     paddingHorizontal: 16,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   input: {
     flex: 1,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   hint: { fontSize: 11, color: COLORS.gray, fontWeight: '600' },
   error: {
     fontSize: 12,
-    color: '#ea4335',
+    color: COLORS.danger,
     fontWeight: '600',
     marginTop: 10,
   },
@@ -258,6 +258,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  ctaDisabled: { backgroundColor: '#c5cdd9', shadowOpacity: 0 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
+  ctaDisabled: { backgroundColor: COLORS.borderStrong, shadowOpacity: 0 },
+  ctaText: { color: COLORS.white, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
 });

@@ -22,10 +22,11 @@ import {
 import { useUserLocation } from '../../hooks/useUserLocation';
 import { ServiceType } from '../../services/services.service';
 import { ApiError } from '../../services/api';
+import type { IconName } from '../../types';
 
 type Step = 1 | 2 | 3;
 
-const SERVICE_META: Record<ServiceType, { icon: string; desc: string; time: string }> = {
+const SERVICE_META: Record<ServiceType, { icon: IconName; desc: string; time: string }> = {
   REVIEW: { icon: 'wrench', desc: 'Inspeção programada Ford', time: '~ 2h' },
   OIL_CHANGE: { icon: 'oil', desc: 'Óleo + filtros originais', time: '~ 1h' },
   WARRANTY: { icon: 'shield-check', desc: 'Atendimento em garantia', time: '~ 1h30' },
@@ -141,7 +142,7 @@ export default function SchedulingScreen() {
             <MaterialCommunityIcons
               name="chevron-left"
               size={26}
-              color={step === 1 ? 'rgba(255,255,255,0.4)' : '#fff'}
+              color={step === 1 ? 'rgba(255,255,255,0.4)' : COLORS.white}
             />
           </TouchableOpacity>
           <Text style={styles.heroTitle}>Agendar Serviço</Text>
@@ -212,9 +213,9 @@ export default function SchedulingScreen() {
                     ]}
                   >
                     <MaterialCommunityIcons
-                      name={meta.icon as any}
+                      name={meta.icon}
                       size={26}
-                      color={active ? '#fff' : COLORS.primary}
+                      color={active ? COLORS.white : COLORS.primary}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -425,7 +426,7 @@ export default function SchedulingScreen() {
           activeOpacity={0.85}
         >
           {createMutation.isPending ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={COLORS.white} size="small" />
           ) : (
             <>
               <Text style={styles.ctaText}>
@@ -434,7 +435,7 @@ export default function SchedulingScreen() {
               <MaterialCommunityIcons
                 name={step === 3 ? 'check-circle' : 'arrow-right'}
                 size={20}
-                color="#fff"
+                color={COLORS.white}
               />
             </>
           )}
@@ -444,11 +445,11 @@ export default function SchedulingScreen() {
   );
 }
 
-function SummaryRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+function SummaryRow({ icon, label, value }: { icon: IconName; label: string; value: string }) {
   return (
     <View style={styles.summaryRow}>
       <View style={styles.summaryIcon}>
-        <MaterialCommunityIcons name={icon as any} size={16} color={COLORS.primary} />
+        <MaterialCommunityIcons name={icon} size={16} color={COLORS.primary} />
       </View>
       <Text style={styles.summaryLabel}>{label}</Text>
       <Text style={styles.summaryValue} numberOfLines={1}>
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
 
   /* Stepper */
   stepper: {
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  stepDotActive: { backgroundColor: '#fff' },
+  stepDotActive: { backgroundColor: COLORS.white },
   stepDotCurrent: {
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.4)',
@@ -518,7 +519,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
   },
-  stepNum: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  stepNum: { color: COLORS.white, fontSize: 12, fontWeight: '800' },
   stepNumActive: { color: COLORS.primary },
   stepLine: {
     flex: 1,
@@ -526,7 +527,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     marginHorizontal: 4,
   },
-  stepLineActive: { backgroundColor: '#fff' },
+  stepLineActive: { backgroundColor: COLORS.white },
   stepLabels: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -539,12 +540,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  stepLabelActive: { color: '#fff' },
+  stepLabelActive: { color: COLORS.white },
 
   /* Scroll */
   scrollArea: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: COLORS.background,
     marginTop: -20,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -565,22 +566,22 @@ const styles = StyleSheet.create({
   serviceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   serviceCardActive: {
     borderColor: COLORS.primary,
-    backgroundColor: '#f6faff',
+    backgroundColor: COLORS.primaryTint,
   },
   serviceIcon: {
     width: 52,
     height: 52,
     borderRadius: 14,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -595,13 +596,13 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
   },
-  tagText: { fontSize: 9, color: '#fff', fontWeight: '800', letterSpacing: 0.5 },
+  tagText: { fontSize: 9, color: COLORS.white, fontWeight: '800', letterSpacing: 0.5 },
 
   /* Dealer */
   mapPreview: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     padding: 14,
     borderRadius: 14,
     marginBottom: 14,
@@ -616,23 +617,23 @@ const styles = StyleSheet.create({
   dealerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   dealerCardActive: {
     borderColor: COLORS.primary,
-    backgroundColor: '#f6faff',
+    backgroundColor: COLORS.primaryTint,
   },
   dealerLeft: { marginRight: 12 },
   dealerIconBg: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -647,18 +648,18 @@ const styles = StyleSheet.create({
   dateCard: {
     width: 70,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     alignItems: 'center',
     marginRight: 10,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   dateCardActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   dateWeekday: { fontSize: 11, color: COLORS.gray, fontWeight: '700' },
   dateWeekdayActive: { color: 'rgba(255,255,255,0.8)' },
   dateDay: { fontSize: 22, color: COLORS.dark, fontWeight: '800', marginTop: 2 },
-  dateDayActive: { color: '#fff' },
+  dateDayActive: { color: COLORS.white },
   dateMonth: { fontSize: 10, color: COLORS.gray, fontWeight: '700', marginTop: 2 },
   dateMonthActive: { color: 'rgba(255,255,255,0.8)' },
 
@@ -667,18 +668,18 @@ const styles = StyleSheet.create({
   timeChip: {
     paddingHorizontal: 18,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#eef0f3',
+    borderColor: COLORS.surfaceAlt,
   },
   timeChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   timeChipText: { color: COLORS.dark, fontWeight: '700', fontSize: 13 },
-  timeChipTextActive: { color: '#fff' },
+  timeChipTextActive: { color: COLORS.white },
 
   /* Summary */
   summary: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 16,
     marginTop: 20,
@@ -697,7 +698,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#f0f5ff',
+    backgroundColor: COLORS.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -707,12 +708,12 @@ const styles = StyleSheet.create({
 
   /* Footer */
   footer: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 28,
     borderTopWidth: 1,
-    borderTopColor: '#eef0f3',
+    borderTopColor: COLORS.surfaceAlt,
   },
   cta: {
     flexDirection: 'row',
@@ -729,8 +730,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   ctaDisabled: {
-    backgroundColor: '#c5cdd9',
+    backgroundColor: COLORS.borderStrong,
     shadowOpacity: 0,
   },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
+  ctaText: { color: COLORS.white, fontSize: 15, fontWeight: '800', letterSpacing: 0.3 },
 });

@@ -25,8 +25,6 @@ export interface Lead {
   reason: string;
   suggestedAction: string;
   updatedAt: string;
-  // Legacy alias kept for demo fixtures; back stopped sending this.
-  recommendedAction?: string;
 }
 
 export interface ListLeadsParams {

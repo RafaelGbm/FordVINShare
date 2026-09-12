@@ -15,8 +15,7 @@ leads em risco, segmentação preditiva, Visão 360 do cliente).
 
 O app **consome um backend Java/Spring Boot** hospedado no Azure
 (`https://vinshare-api.azurewebsites.net/api/v1`, PostgreSQL). Sem Supabase,
-sem mock — quando o back está fora, o app pode rodar em **modo demo**
-(flag de ambiente, com fixtures realistas pré-populadas no React Query).
+sem mock: todas as telas leem e escrevem na API real.
 
 ## Stack
 
@@ -44,15 +43,16 @@ FordVINShare/
 │   └── odometer/[vehicleId].tsx
 ├── src/
 │   ├── components/               # FordLogo, StateBox
-│   ├── config/env.ts             # EXPO_PUBLIC_API_URL, EXPO_PUBLIC_DEMO_MODE
+│   ├── config/env.ts             # EXPO_PUBLIC_API_URL
+│   ├── constants/index.ts        # Design tokens (cores, spacing, radius, tipografia)
 │   ├── hooks/                    # 17 hooks React Query + utilidades
 │   ├── screens/                  # 13 telas (split client/analyst)
 │   ├── services/                 # 13 services da API + api.ts (axios) + secureStorage + queryPersist
-│   ├── types/index.ts            # Tipos compartilhados (User, UserRole)
-│   └── utils/                    # store.ts (Zustand), demoMode.ts, deepLinks.ts, pushNotifications.ts
+│   ├── types/index.ts            # Tipos compartilhados (User, UserRole, IconName)
+│   └── utils/                    # store.ts (Zustand), deepLinks.ts, pushNotifications.ts
 ├── scripts/verify-backend.sh     # Smoke test contra o back real
-├── app.json                      # Configuração Expo
-├── eas.json                      # Perfis de build (dev/preview/production)
+├── app.json                      # Configuração Expo (inclui o eas.projectId)
+├── eas.json                      # Perfis de build (development/preview/production)
 └── package.json
 ```
 
@@ -64,28 +64,11 @@ npm install
 
 # 2. Variáveis de ambiente
 cp .env.example .env
-# Edite:
-#   EXPO_PUBLIC_API_URL=https://vinshare-api.azurewebsites.net/api/v1
-#   EXPO_PUBLIC_DEMO_MODE=false      (true se quiser rodar sem o back)
+# O padrão já aponta pro backend no Azure.
 
 # 3. Rodar
 npm start          # 'a' Android, 'i' iOS, 'w' Web
 ```
-
-### Modo demonstração (sem backend)
-
-Setar `EXPO_PUBLIC_DEMO_MODE=true` no `.env`. A LoginScreen passa a exibir um
-painel com dois botões:
-
-- **Cliente** → entra como João Silva (Ranger 2023), com veículos,
-  agendamentos, pontos, chat e NPS pré-preenchidos
-- **Analista** → entra como Ana Oliveira, com KPIs, leads, distribuição de
-  segmentos e Visão 360 já populados
-
-O React Query é semeado com fixtures (`src/utils/demoMode.ts`) antes das
-telas montarem. Mutations (criar agendamento, resgatar prêmio, enviar
-mensagem no chat) ainda tentam bater na API real e falham — o demo é só
-pra apresentar navegação e estados visuais.
 
 ## Fluxos do app
 
@@ -113,16 +96,42 @@ pra apresentar navegação e estados visuais.
 
 ## Identidade visual
 
-| Token | Valor |
+Tudo vive em [`src/constants/index.ts`](src/constants/index.ts). **Não existe
+literal hexadecimal em nenhuma tela** — o `grep` abaixo tem que continuar
+voltando vazio:
+
+```bash
+grep -rE "#[0-9a-fA-F]{3,8}" src app --include=*.tsx --include=*.ts \
+  | grep -v src/constants
+```
+
+### Cores
+
+| Grupo | Tokens |
 |---|---|
-| Primária | `#003087` (Ford Blue) |
-| Sucesso | `#1e8e3e` |
-| Warning | `#f5a623` |
-| Erro | `#ea4335` |
-| Background | `#f5f5f7` |
-| Cards | `borderRadius: 14-20`, sombra `opacity: 0.04-0.06` |
+| Marca | `primary #003087` (Ford Blue) · `primaryBright #0a4bb8` · `primaryTint #f0f5ff` · `primaryTintStrong #e8efff` · `primaryBorder #c5d4f0` · `secondary #1a73e8` |
+| Sucesso | `success #1e8e3e` · `successTint #e9f7ee` |
+| Atenção | `warning #f5a623` · `warningStrong #ffc966` · `warningTint #fff4e0` · `warningText #a36b00` |
+| Erro | `danger #ea4335` · `dangerTint #fce8e6` · `dangerText #c62828` |
+| Neutros | `background #f5f5f7` · `surface #fff` · `surfaceAlt #eef0f3` · `surfaceMuted #f0f2f5` · `border #e6e8eb` · `borderStrong #c5cdd9` · `dark #202124` · `gray #80868b` |
+| Categóricas | `ACCENTS`: violet, purple, purpleDark, pink, coral, teal — para avatares, categorias de prêmio e tipos de evento na timeline. Sem significado de status. |
+
+Os `rgba(255,255,255,x)` sobre o hero azul continuam inline: são variações de
+opacidade sobre um mesmo fundo, não cores do sistema.
+
+### Layout e tipografia
+
+| Token | Uso |
+|---|---|
+| `SPACING` | `xs 4` → `xxl 24` |
+| `RADIUS` | `sm 8` · `md 12` · `lg 14` · `xl 20` · `hero 28` · `pill` |
+| `SHADOWS` | `card` (opacity 0.04) e `raised` (0.06) |
+| `TYPOGRAPHY` | `heroTitle` · `title` · `sectionTitle` · `body` · `label` · `caption` |
 | Hero | Fundo Ford Blue + blob decorativo + card branco overlay (`borderTopRadius: 28`) |
 | Splash/Icon | Logo oval Ford sobre fundo `#003087` |
+
+Nomes de ícone são tipados (`IconName` em `src/types`), então um glifo escrito
+errado vira erro de compilação em vez de um quadrado vazio em runtime.
 
 ## Autenticação
 
@@ -177,19 +186,39 @@ Faixas que viram `status` no lead:
 | Testes | `npm test` |
 | Validar back real | `EMAIL=… PASSWORD=… bash scripts/verify-backend.sh` |
 
-Testes cobrem `parseDeepLink`, `shouldPersistQuery`, `ApiError`,
-`<StateBox />`.
+20 testes em 4 suítes:
+
+| Suíte | Cobre |
+|---|---|
+| `services/__tests__/api` | `ApiError` e o envelope de resposta |
+| `services/__tests__/queryPersist` | Allowlist de persistência do cache |
+| `utils/__tests__/deepLinks` | `parseDeepLink` |
+| `components/__tests__/StateBox` | Estados de loading/erro/vazio |
+
+Antes de apresentar, rodar o smoke test contra o backend no ar:
+
+```bash
+EMAIL=… PASSWORD=… bash scripts/verify-backend.sh
+```
 
 ## Build (EAS)
 
-Perfis em `eas.json` (`development` / `preview` / `production`). Antes
-de subir builds standalone, criar projeto em https://expo.dev e colar o
-`projectId` em `app.json` (`extra.eas.projectId`).
+O `projectId` já está em `app.json` (`extra.eas.projectId`). Perfis em
+`eas.json` — **todos geram APK**, inclusive `production`:
+
+| Perfil | API | Uso |
+|---|---|---|
+| `development` | `localhost:8080` | Dev client |
+| `preview` | Azure | APK interno para testes |
+| `production` | Azure | Entrega final (`autoIncrement`) |
 
 ```bash
 npm i -g eas-cli
 eas login
-eas build --profile preview --platform all
-eas submit --platform android   # depois de production
-eas submit --platform ios
+eas build --profile preview --platform android    # APK para instalar direto
+eas build --profile production --platform android # entrega final
 ```
+
+> `production` está configurado como `buildType: apk` porque a entrega da
+> sprint pede um APK instalável. Para publicar na Play Store, trocar para
+> `app-bundle` (a loja não aceita APK) e então rodar `eas submit`.

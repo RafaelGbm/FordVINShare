@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 
 import { parseDeepLink } from '../utils/deepLinks';
 
@@ -30,7 +30,9 @@ function handleResponse(response: Notifications.NotificationResponse) {
     | undefined;
   const route = parseDeepLink(deepLink);
   if (route) {
-    router.push(route as any);
+    // parseDeepLink only ever returns paths from its own allowlist, so the
+    // assertion narrows a validated string rather than silencing a real risk.
+    router.push(route as Href);
   }
 }
 
