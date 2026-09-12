@@ -155,7 +155,60 @@ mantemos a normalização. Se for array, o app aceita os dois de qualquer forma.
 
 ---
 
-## 5. `/dealerships` devolve 500 quando falta `lat`/`lng`
+## 5. 🔴 `POST /appointments` quebra para qualquer cliente novo
+
+**Isto não é sobre a conta de teste — é reprodutível para qualquer cliente
+que se cadastre pelo `POST /auth/register` e tente marcar seu primeiro
+agendamento.** Suspeitamos que bloqueia esse fluxo em produção também.
+
+```
+POST /appointments
+{"vehicleId": "...", "dealershipId": "...", "serviceTypeId": "REVIEW", "scheduledAt": "..."}
+
+→ 500 { "title": "Erro interno", "detail": "Ocorreu um erro ao processar a requisição..." }
+```
+
+Isolamos variando cada campo, sempre com o mesmo cliente e veículo:
+
+| Variação testada | Resultado |
+|---|---|
+| 4 `dealershipId` diferentes | 500 em todas |
+| 4 `serviceTypeId` (`REVIEW`, `OIL_CHANGE`, `WARRANTY`, `REPAIR`) | 500 em todos |
+| 3 formatos de `scheduledAt` (`Z`, `-03:00`, sem offset) | 500 em todos |
+| `vehicleId` de outro cliente (controle) | **404** correto — "Veículo não encontrado", prova que a busca funciona |
+
+Ou seja, o problema não está em nenhum parâmetro do request — é algo no
+estado do `customer`/`vehicle` desse cliente especificamente. Testamos duas
+hipóteses de dado faltando e nenhuma resolveu:
+
+- Criar `loyalty_accounts` para o cliente (não tinha) → continuou 500
+- Criar `customer_segments` para o cliente (não tinha, é populado por ML) →
+  continuou 500
+
+O cliente foi criado via `POST /auth/register` (fluxo oficial). O veículo
+foi inserido diretamente no banco, na ausência de endpoint que o crie — mas
+o veículo em si funciona normalmente: `GET /me/vehicles`,
+`GET /vehicles/{id}/warranty` e `GET /vehicles/{id}/maintenance-alerts`
+respondem 200 com dado coerente. O problema é isolado ao `POST /appointments`.
+
+**Nosso melhor palpite, sem acesso a logs**: alguma lógica de negócio dentro
+do service de criar agendamento assume histórico prévio do cliente (primeira
+visita, sem serviços anteriores, sem segmento calculado) e quebra em vez de
+tratar o caso vazio — o mesmo padrão do bug já corrigido em
+`/analytics/vin-share/series` (cast frágil / acesso sem checar vazio).
+
+**O que fizemos:** para não travar a sprint, inserimos o histórico de
+demonstração (agendamentos, serviços, NPS, pontos) diretamente no banco,
+contornando este endpoint. Isso resolve nossa demonstração, mas não resolve
+o problema para um cliente real da Ford.
+
+**O que precisamos:** stack trace do erro (acesso aos logs do Azure) ou uma
+reprodução local. Se ajudar, os IDs usados no teste (customer, vehicle,
+dealership) estão disponíveis sob pedido.
+
+---
+
+## 6. `/dealerships` devolve 500 quando falta `lat`/`lng`
 
 ```
 GET /dealerships                            → 500
@@ -184,10 +237,14 @@ uma queda do servidor, o que atrapalha o diagnóstico.
 
 | Item | Quem resolve | Bloqueia a entrega? |
 |---|---|---|
-| Veículo para uma conta cliente | **Back (INSERT)** | **Sim** |
+| Veículo para uma conta cliente | ~~Back (INSERT)~~ contornado via banco | Não mais |
+| `POST /appointments` 500 para cliente novo | **Back (investigar)** | Contornado na demo; **é bug de produto real** |
 | `JWT_ACCESS_MIN=900` | Back (env Azure) | Não |
 | `GET /customers/{id}` | Back (confirmar) | Não |
 | `/me/appointments` Page vs array | Back (documentar) | Não, app já adapta |
 | `/dealerships` 500 sem `lat`/`lng` | Back (validação) | Não, app sempre envia |
 
-O item 1 é o único que trava a sprint. Os outros quatro são fechamento.
+Nada bloqueia mais a nossa entrega — contornamos os dois primeiros itens
+inserindo dados diretamente no banco. Mas o item 2 é um bug real que afeta
+qualquer cliente novo do app tentando marcar o primeiro agendamento, e
+merece prioridade alta independente da nossa sprint.
