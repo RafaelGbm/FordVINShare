@@ -16,9 +16,17 @@ Sobraram 4 itens. Só o primeiro é bloqueio.
 
 ---
 
-## 1. 🔴 BLOQUEIO — a conta de teste não tem veículo
+## 1. 🔴 BLOQUEIO — nenhuma conta cliente tem veículo
 
-`claude-test@vinshare.dev` autentica normalmente, mas está vazia:
+> **Atualização 2026-09-12, mais tarde:** `claude-test@vinshare.dev` foi
+> promovida a `ADMIN`. Com isso ela passou a receber **403** em todos os
+> `/me/*` (um ADMIN não tem registro `Customer`), então as telas de cliente
+> deixaram de abrir. Criamos `cliente.demo@vinshare.dev` via
+> `POST /auth/register` para ter um `CLIENT` de volta — os `/me/*` respondem
+> 200 nela, mas **continua sem veículo**, que é o que este item pede.
+> A senha dela não vai neste documento; peça no Slack.
+
+`cliente.demo@vinshare.dev` autentica normalmente, mas está vazia:
 
 ```
 GET /me/vehicles         → data: []      (0 itens)
@@ -147,13 +155,39 @@ mantemos a normalização. Se for array, o app aceita os dois de qualquer forma.
 
 ---
 
+## 5. `/dealerships` devolve 500 quando falta `lat`/`lng`
+
+```
+GET /dealerships                            → 500
+GET /dealerships?radiusKm=20                → 500
+GET /dealerships?service=REVIEW             → 500
+GET /dealerships?lat=-23.55&lng=-46.63      → 200
+GET /dealerships?lat=-23.55&lng=-46.63&radiusKm=20 → 200
+```
+
+O corpo é o handler genérico (`"Ocorreu um erro ao processar a requisição"`),
+sem indicar o que faltou.
+
+**Impacto no app: nenhum.** O `useUserLocation` sempre devolve coordenadas —
+cai no centro de São Paulo quando a permissão é negada ou ainda não resolveu —
+e as duas telas que consultam concessionárias sempre enviam `lat`/`lng`. Não
+há caminho no app que dispare esse 500.
+
+**O que precisamos de vocês:** se `lat`/`lng` são obrigatórios, devolver `400`
+com `errors: [{field, message}]`, como já acontece no `/auth/login`. Se forem
+opcionais, tratar a ausência. Hoje um parâmetro faltando é indistinguível de
+uma queda do servidor, o que atrapalha o diagnóstico.
+
+---
+
 ## Resumo
 
 | Item | Quem resolve | Bloqueia a entrega? |
 |---|---|---|
-| Veículo para a conta de teste | **Back (INSERT)** | **Sim** |
+| Veículo para uma conta cliente | **Back (INSERT)** | **Sim** |
 | `JWT_ACCESS_MIN=900` | Back (env Azure) | Não |
 | `GET /customers/{id}` | Back (confirmar) | Não |
 | `/me/appointments` Page vs array | Back (documentar) | Não, app já adapta |
+| `/dealerships` 500 sem `lat`/`lng` | Back (validação) | Não, app sempre envia |
 
-O item 1 é o único que trava a sprint. Os outros três são fechamento.
+O item 1 é o único que trava a sprint. Os outros quatro são fechamento.
