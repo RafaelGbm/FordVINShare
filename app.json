@@ -21,7 +21,11 @@
         "monochromeImage": "./assets/images/splash-icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -60,9 +64,11 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "owner": "fordvinshare",
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "ba43f7a9-5f70-461e-af39-eda108f5b4d2"
+        "projectId": "d4c9a22c-e36f-4c6f-be14-e391e6b15180"
       }
     }
   }
