@@ -3,9 +3,10 @@
 # Mirrors the checklist from docs/BACKEND_RESPONSE_2026-05-24.md.
 #
 # Usage:
-#   EMAIL=claude-test@vinshare.dev PASSWORD=Test1234! bash scripts/verify-backend.sh
-#   # or with a different account:
-#   EMAIL=owner@ford.com PASSWORD=senha123 bash scripts/verify-backend.sh
+#   EMAIL=<user> PASSWORD=<senha> bash scripts/verify-backend.sh
+#
+# Pass credentials through the environment, never by editing this file:
+# anything written here is committed and pushed with it.
 #
 # Exits 0 when every check passes, 1 on the first failure.
 # Requires: bash, curl, jq.
