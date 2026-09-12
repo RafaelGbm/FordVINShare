@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
-# Validate that the back's promised fixes for 2026-05-28 deploy actually shipped.
+# Smoke test the deployed backend against the contract the app expects.
 # Mirrors the checklist from docs/BACKEND_RESPONSE_2026-05-24.md.
 #
 # Usage:
-#   EMAIL=<user> PASSWORD=<senha> bash scripts/verify-backend.sh
+#   EMAIL=<analista/admin> PASSWORD=<senha> \
+#   CLIENT_EMAIL=<cliente> CLIENT_PASSWORD=<senha> \
+#     bash scripts/verify-backend.sh
+#
+# EMAIL must be an ANALYST or ADMIN account: most checks hit analyst-only
+# endpoints. CLIENT_EMAIL is optional, but the /me/* checks need it — an
+# admin has no Customer record, so those endpoints answer 403 for them.
 #
 # Pass credentials through the environment, never by editing this file:
 # anything written here is committed and pushed with it.
 #
-# Exits 0 when every check passes, 1 on the first failure.
+# Exits 0 when every check passes, 1 if any failed.
 # Requires: bash, curl, jq.
 
 set -uo pipefail
@@ -16,157 +22,168 @@ set -uo pipefail
 BASE="${API_URL:-https://vinshare-api.azurewebsites.net/api/v1}"
 EMAIL="${EMAIL:?set EMAIL=... before running}"
 PASSWORD="${PASSWORD:?set PASSWORD=... before running}"
+CLIENT_EMAIL="${CLIENT_EMAIL:-}"
+CLIENT_PASSWORD="${CLIENT_PASSWORD:-}"
 
 PASS=0
 FAIL=0
 WARN=0
 
-color() { printf '\033[%sm%s\033[0m' "$1" "$2"; }
-ok()    { color '0;32' "[ OK ]";  PASS=$((PASS+1)); }
-fail()  { color '0;31' "[FAIL]";  FAIL=$((FAIL+1)); }
-warn()  { color '0;33' "[WARN]";  WARN=$((WARN+1)); }
+# NOTE: these print *and* count, so they must be called as statements
+# (`ok "msg"`), never inside $(...) — a command substitution runs in a
+# subshell and the counter increments would be discarded, which used to
+# make the script report 0/0/0 and always exit 0.
+ok()   { PASS=$((PASS+1)); printf '\033[0;32m[ OK ]\033[0m %s\n' "$1"; }
+fail() { FAIL=$((FAIL+1)); printf '\033[0;31m[FAIL]\033[0m %s\n' "$1"; }
+warn() { WARN=$((WARN+1)); printf '\033[0;33m[WARN]\033[0m %s\n' "$1"; }
 
 require_jq() {
   if ! command -v jq >/dev/null 2>&1; then
-    echo "Missing dependency: jq. Install via 'brew install jq', 'choco install jq', or 'apt install jq'."
+    echo "Missing dependency: jq. Install via 'winget install jqlang.jq', 'brew install jq', or 'apt install jq'."
     exit 2
   fi
 }
 
-login() {
-  local body
+# Logs in and echoes the access token, or an empty string on failure.
+login_token() {
+  local email=$1 password=$2 body
   body=$(curl -sS -X POST "$BASE/auth/login" \
     -H 'Content-Type: application/json' \
-    -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
-  TOKEN=$(echo "$body" | jq -r '.data.accessToken // empty')
-  EXPIRES_IN=$(echo "$body" | jq -r '.data.expiresIn // empty')
-  if [ -z "$TOKEN" ]; then
-    echo "Login failed. Response was:"
-    echo "$body" | jq .
-    exit 1
-  fi
+    -d "{\"email\":\"$email\",\"password\":\"$password\"}")
+  echo "$body" | jq -r '.data.accessToken // empty'
 }
 
 http_code() {
-  curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$BASE$1"
+  local token=$1 path=$2
+  curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" "$BASE$path"
 }
 
 probe_json() {
-  curl -sS -H "Authorization: Bearer $TOKEN" "$BASE$1"
+  local token=$1 path=$2
+  curl -sS -H "Authorization: Bearer $token" "$BASE$path"
 }
 
 # ─── Checks ─────────────────────────────────────────────────────────────────
 
 check_expires_in() {
   if [ "$EXPIRES_IN" = "900" ]; then
-    echo "$(ok) expiresIn=$EXPIRES_IN (expected 900)"
+    ok "expiresIn=$EXPIRES_IN (expected 900)"
   else
-    echo "$(fail) expiresIn=$EXPIRES_IN (expected 900 — JWT_ACCESS_MIN env not flipped?)"
+    fail "expiresIn=$EXPIRES_IN (expected 900 — JWT_ACCESS_MIN env not flipped?)"
   fi
 }
 
 check_endpoint_200() {
-  local label=$1 path=$2
-  local code; code=$(http_code "$path")
+  local token=$1 label=$2 path=$3
+  local code; code=$(http_code "$token" "$path")
   if [ "$code" = "200" ]; then
-    echo "$(ok) $label  GET $path  → 200"
+    ok "$label  GET $path  → 200"
   else
-    echo "$(fail) $label  GET $path  → $code (expected 200)"
+    fail "$label  GET $path  → $code (expected 200)"
+  fi
+}
+
+check_openapi() {
+  local code; code=$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/v3/api-docs")
+  if [ "$code" = "200" ]; then
+    ok "OpenAPI spec GET /v3/api-docs → 200"
+  else
+    fail "OpenAPI spec GET /v3/api-docs → $code (expected 200)"
+  fi
+}
+
+check_me_fullname() {
+  local body; body=$(probe_json "$ADMIN_TOKEN" "/me")
+  local name; name=$(echo "$body" | jq -r '.data.fullName // empty')
+  if [ -z "$name" ] || [ "$name" = "null" ]; then
+    warn "/me fullName is null for $EMAIL (back may not have populated display_name yet)"
+  else
+    ok "/me fullName=\"$name\""
   fi
 }
 
 check_lead_fields() {
-  local body; body=$(probe_json "/leads?status=EM_RISCO&size=1")
-  local code; code=$(echo "$body" | jq -r '.success // false')
-  if [ "$code" != "true" ]; then
-    echo "$(fail) /leads?status=EM_RISCO did not return success:true"
+  local body; body=$(probe_json "$ADMIN_TOKEN" "/leads?status=EM_RISCO&size=1")
+  if [ "$(echo "$body" | jq -r '.success // false')" != "true" ]; then
+    fail "/leads?status=EM_RISCO did not return success:true"
+    return
+  fi
+  local lead; lead=$(echo "$body" | jq -r '.data.content[0] // empty')
+  if [ -z "$lead" ]; then
+    warn "/leads returned empty content; cannot verify new fields"
     return
   fi
   local missing=()
-  local lead; lead=$(echo "$body" | jq -r '.data.content[0] // empty')
-  if [ -z "$lead" ]; then
-    echo "$(warn) /leads returned empty content; cannot verify new fields"
-    return
-  fi
   for field in cpfMasked vehiclePlate status warrantyStatus daysSinceLastVisit customerId updatedAt; do
-    local present; present=$(echo "$lead" | jq -r --arg f "$field" 'has($f)')
-    if [ "$present" != "true" ]; then missing+=("$field"); fi
+    if [ "$(echo "$lead" | jq -r --arg f "$field" 'has($f)')" != "true" ]; then
+      missing+=("$field")
+    fi
   done
   if [ ${#missing[@]} -eq 0 ]; then
-    echo "$(ok) /leads content[0] has all 7 new fields (cpfMasked, vehiclePlate, status, warrantyStatus, daysSinceLastVisit, customerId, updatedAt)"
+    ok "/leads content[0] has all 7 new fields"
   else
-    echo "$(fail) /leads content[0] missing fields: ${missing[*]}"
+    fail "/leads content[0] missing fields: ${missing[*]}"
   fi
 }
 
 check_segments_distribution_envelope() {
-  local body; body=$(probe_json "/segments/distribution")
+  local body; body=$(probe_json "$ADMIN_TOKEN" "/segments/distribution")
   local kind; kind=$(echo "$body" | jq -r '.data | if type == "array" then "array" else (keys | join(",")) end')
   if [ "$kind" = "array" ]; then
-    echo "$(warn) /segments/distribution still returns a flat array (back hasn't deployed the envelope yet — service normalizer handles it)"
+    warn "/segments/distribution still returns a flat array (service normalizer handles it)"
   elif echo "$kind" | grep -q "buckets" && echo "$kind" | grep -q "totalCustomers"; then
-    echo "$(ok) /segments/distribution envelope shipped (keys: $kind)"
+    ok "/segments/distribution envelope shipped (keys: $kind)"
   else
-    echo "$(fail) /segments/distribution unexpected shape — keys: $kind"
+    fail "/segments/distribution unexpected shape — keys: $kind"
   fi
 }
 
 check_segments_customers_shape() {
-  local body; body=$(probe_json "/segments/FIEL/customers?size=1")
+  local body; body=$(probe_json "$ADMIN_TOKEN" "/segments/FIEL/customers?size=1")
   local first; first=$(echo "$body" | jq -r '.data.content[0] // empty')
   if [ -z "$first" ]; then
-    echo "$(warn) /segments/FIEL/customers returned empty content; cannot verify"
+    warn "/segments/FIEL/customers returned empty content; cannot verify"
     return
   fi
   if echo "$first" | jq -e 'has("name") and has("cpfMasked") and has("estimatedLtv")' >/dev/null; then
-    echo "$(ok) /segments/{segment}/customers shipped real customer profile (name, cpfMasked, estimatedLtv)"
+    ok "/segments/{segment}/customers shipped real customer profile"
   else
-    local keys; keys=$(echo "$first" | jq -r 'keys | join(",")')
-    echo "$(warn) /segments/{segment}/customers still on the ML-prediction shape (keys: $keys)"
+    warn "/segments/{segment}/customers still on the ML-prediction shape (keys: $(echo "$first" | jq -r 'keys | join(",")'))"
   fi
 }
 
 check_dealership_vin_share() {
-  local body; body=$(probe_json "/analytics/vin-share/by-dealership?period=30d")
+  local body; body=$(probe_json "$ADMIN_TOKEN" "/analytics/vin-share/by-dealership?period=30d")
   local first; first=$(echo "$body" | jq -r '.data[0] // empty')
   if [ -z "$first" ]; then
-    echo "$(warn) /analytics/vin-share/by-dealership empty; cannot verify"
+    warn "/analytics/vin-share/by-dealership empty; cannot verify"
     return
   fi
   if echo "$first" | jq -e 'has("trend") and has("estimatedRevenue")' >/dev/null; then
-    echo "$(ok) /analytics/vin-share/by-dealership has trend + estimatedRevenue"
+    ok "/analytics/vin-share/by-dealership has trend + estimatedRevenue"
   else
-    echo "$(warn) /analytics/vin-share/by-dealership missing trend/estimatedRevenue (back hasn't shipped yet)"
+    warn "/analytics/vin-share/by-dealership missing trend/estimatedRevenue"
   fi
 }
 
 check_availability_time_format() {
   local dealership_id
-  dealership_id=$(probe_json "/dealerships?lat=-23.55&lng=-46.63&radiusKm=50" | jq -r '.data[0].id // empty')
+  dealership_id=$(probe_json "$ADMIN_TOKEN" "/dealerships?lat=-23.55&lng=-46.63&radiusKm=50" | jq -r '.data[0].id // empty')
   if [ -z "$dealership_id" ]; then
-    echo "$(warn) Could not fetch a dealership ID; skipping availability check"
+    warn "Could not fetch a dealership ID; skipping availability check"
     return
   fi
+  local date; date=$(date -d '+30 days' +%Y-%m-%d 2>/dev/null || date -v+30d +%Y-%m-%d 2>/dev/null)
   local time
-  time=$(probe_json "/dealerships/$dealership_id/availability?serviceType=REVIEW&date=2026-06-01" | jq -r '.data.slots[0].time // empty')
+  time=$(probe_json "$ADMIN_TOKEN" "/dealerships/$dealership_id/availability?serviceType=REVIEW&date=$date" | jq -r '.data.slots[0].time // empty')
   if [ -z "$time" ]; then
-    echo "$(warn) availability returned no slots; cannot verify time format"
+    warn "availability returned no slots for $date; cannot verify time format"
     return
   fi
   case "$time" in
-    *:*:*) echo "$(warn) AvailabilitySlot.time=\"$time\" still has seconds (back hasn't applied @JsonFormat yet)" ;;
-    *) echo "$(ok) AvailabilitySlot.time=\"$time\" (HH:mm)" ;;
+    *:*:*) warn "AvailabilitySlot.time=\"$time\" still has seconds (@JsonFormat not applied)" ;;
+    *)     ok "AvailabilitySlot.time=\"$time\" (HH:mm)" ;;
   esac
-}
-
-check_me_fullname() {
-  local body; body=$(probe_json "/me")
-  local name; name=$(echo "$body" | jq -r '.data.fullName // empty')
-  if [ -z "$name" ] || [ "$name" = "null" ]; then
-    echo "$(warn) /me fullName is null for $EMAIL (back may not have populated display_name yet)"
-  else
-    echo "$(ok) /me fullName=\"$name\""
-  fi
 }
 
 # ─── Run ────────────────────────────────────────────────────────────────────
@@ -174,7 +191,24 @@ check_me_fullname() {
 require_jq
 
 echo "→ Logging in as $EMAIL against $BASE"
-login
+ADMIN_TOKEN=$(login_token "$EMAIL" "$PASSWORD")
+if [ -z "$ADMIN_TOKEN" ]; then
+  echo "Login failed for $EMAIL. Check the credentials and try again."
+  exit 1
+fi
+EXPIRES_IN=$(curl -sS -X POST "$BASE/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" | jq -r '.data.expiresIn // empty')
+
+CLIENT_TOKEN=""
+if [ -n "$CLIENT_EMAIL" ] && [ -n "$CLIENT_PASSWORD" ]; then
+  echo "→ Logging in as $CLIENT_EMAIL (client role)"
+  CLIENT_TOKEN=$(login_token "$CLIENT_EMAIL" "$CLIENT_PASSWORD")
+  if [ -z "$CLIENT_TOKEN" ]; then
+    echo "Login failed for $CLIENT_EMAIL. Check the credentials and try again."
+    exit 1
+  fi
+fi
 
 echo
 echo "── Auth & user profile ─────────────────────────────"
@@ -182,12 +216,22 @@ check_expires_in
 check_me_fullname
 
 echo
-echo "── Endpoints previously returning 500 ──────────────"
-check_endpoint_200 "Home timeline " "/me/services"
-check_endpoint_200 "Appointments  " "/me/appointments"
-check_endpoint_200 "VIN Share line" "/analytics/vin-share/series?groupBy=week&from=2026-04-01&to=2026-05-28"
-check_endpoint_200 "NPS summary   " "/analytics/nps"
-echo "$(test "$(curl -sS -o /dev/null -w '%{http_code}' "$BASE/v3/api-docs")" = "200" && ok || fail) OpenAPI spec GET /v3/api-docs"
+echo "── Client endpoints ────────────────────────────────"
+if [ -n "$CLIENT_TOKEN" ]; then
+  check_endpoint_200 "$CLIENT_TOKEN" "Vehicles      " "/me/vehicles"
+  check_endpoint_200 "$CLIENT_TOKEN" "Home timeline " "/me/services"
+  check_endpoint_200 "$CLIENT_TOKEN" "Appointments  " "/me/appointments"
+  check_endpoint_200 "$CLIENT_TOKEN" "Loyalty       " "/me/loyalty/balance"
+  check_endpoint_200 "$CLIENT_TOKEN" "Pending NPS   " "/me/surveys/pending"
+else
+  warn "CLIENT_EMAIL/CLIENT_PASSWORD not set — skipping /me/* checks (an admin gets 403 there)"
+fi
+
+echo
+echo "── Analyst endpoints ───────────────────────────────"
+check_endpoint_200 "$ADMIN_TOKEN" "VIN Share line" "/analytics/vin-share/series?groupBy=month"
+check_endpoint_200 "$ADMIN_TOKEN" "NPS summary   " "/analytics/nps"
+check_openapi
 
 echo
 echo "── Shape upgrades ──────────────────────────────────"
