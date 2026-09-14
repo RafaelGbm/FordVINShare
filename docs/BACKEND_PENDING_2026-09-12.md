@@ -233,6 +233,48 @@ uma queda do servidor, o que atrapalha o diagnóstico.
 
 ---
 
+## 7. Sugestão: não existe endpoint para o analista ver agendamentos de um cliente
+
+Isto não é um bug — é uma lacuna que descobrimos ao auditar `/customers/{id}/360`
+contra o que a tela de Visão 360 esperava mostrar. Conferimos a spec inteira
+(`/v3/api-docs`): não há nenhuma rota do tipo
+`GET /customers/{id}/appointments`. As opções disponíveis para o analista são:
+
+- `GET /appointments/{id}` — precisa já saber o ID do agendamento
+- `GET /me/appointments` — só os do próprio usuário logado
+
+Isso significa que a Visão 360 nunca pode mostrar "agendamentos ativos" de um
+cliente, nem oferecer as ações de check-in/concluir direto dali — a tela
+tinha essa seção, mas o dado que ela dependia nunca chega. Removemos a seção
+do app (branch `main`, commit ao final desta sessão) porque manter uma UI
+para um dado inatingível é pior do que não ter a UI.
+
+Se fizer sentido no roadmap, um `GET /customers/{id}/appointments?status=...`
+restauraria essa funcionalidade — nenhuma prioridade definida por nós, é só
+o registro do que encontramos.
+
+---
+
+## Nota: 5 tipos do app tinham contrato desatualizado, não é bug do backend
+
+Ao popular a conta de demonstração, comparamos o payload real de 6 endpoints
+com os tipos TypeScript do app, campo a campo. Achamos divergências em
+`ServiceRecord`, `PendingSurvey`, `AppointmentSummary`, `LoyaltyTransaction` e
+`Customer360` — nomes de campo diferentes (`dealershipName` em vez de
+`dealership`, `serviceTypeLabel` em vez de `serviceType`), tipos de enum
+diferentes (`loyalty` usa `REDEEM`, não `SPEND`), e sinal de número invertido
+(`points` sempre positivo no backend, o app assumia negativo para gastos).
+
+**Isso não é pendência para vocês** — o formato que a API manda é o formato
+real e correto; o app é que nunca tinha sido validado contra produção com
+dado de verdade até agora. Já corrigimos tudo do nosso lado. Registramos aqui
+só para o caso de vocês mudarem esse formato no futuro sem avisar — cada
+divergência agora tem um teste de contrato (`src/services/__tests__/*.test.ts`)
+que fixa o payload real como fixture, então qualquer mudança de shape quebra
+os testes em vez de quebrar silenciosamente em produção.
+
+---
+
 ## Resumo
 
 | Item | Quem resolve | Bloqueia a entrega? |
@@ -243,6 +285,8 @@ uma queda do servidor, o que atrapalha o diagnóstico.
 | `GET /customers/{id}` | Back (confirmar) | Não |
 | `/me/appointments` Page vs array | Back (documentar) | Não, app já adapta |
 | `/dealerships` 500 sem `lat`/`lng` | Back (validação) | Não, app sempre envia |
+| Sem endpoint de agendamentos por cliente (analista) | Back (feature, sem prioridade nossa) | Não — seção removida do app |
+| 5 tipos do app com contrato desatualizado | **Nosso lado**, já corrigido | Não |
 
 Nada bloqueia mais a nossa entrega — contornamos os dois primeiros itens
 inserindo dados diretamente no banco. Mas o item 2 é um bug real que afeta

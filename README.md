@@ -207,15 +207,27 @@ Faixas que viram `status` no lead:
 | Testes | `npm test` |
 | Validar back real | `EMAIL=… PASSWORD=… bash scripts/verify-backend.sh` |
 
-36 testes em 5 suítes:
+49 testes em 9 suítes:
 
 | Suíte | Cobre |
 |---|---|
 | `services/__tests__/api` | `ApiError`, o envelope de resposta e a tradução de erros que o backend não descreve (401 sem corpo, 5xx, timeout, falta de rede) |
-| `services/__tests__/appointments.service` | Normalização do `Page` que o backend devolve em `/me/appointments` |
+| `services/__tests__/appointments.service` | Normalização do `Page` de `/me/appointments` e dos campos achatados (`dealershipId`+`Name`, `serviceTypeId`+`Label`) em todo o CRUD de agendamento |
+| `services/__tests__/services.service` | Mesmo achatamento em `/me/services` e `/vehicles/{id}/services` |
+| `services/__tests__/nps.service` | `/me/surveys/pending` — o backend só manda o rótulo do serviço, não o código |
+| `services/__tests__/loyalty.service` | `type` real (`EARN/REDEEM/EXPIRE/ADJUSTMENT`, não `EARN/SPEND`), sinal de `points` (o backend manda sempre positivo) e o `label` derivado |
+| `services/__tests__/customers.service` | `Customer360` (veículo singular, `segment` como objeto, `lifetimeStats`) e a timeline (`at`→`occurredAt`, id sintético) |
 | `services/__tests__/queryPersist` | Allowlist de persistência do cache |
 | `utils/__tests__/deepLinks` | `parseDeepLink` |
 | `components/__tests__/StateBox` | Estados de loading/erro/vazio |
+
+As 5 suítes de contrato (`appointments`, `services`, `nps`, `loyalty`,
+`customers`) nasceram de uma auditoria campo-a-campo contra o backend em
+produção em 2026-09-14 — o payload real de 6 endpoints divergia do que os
+tipos declaravam, e cada suíte fixa o payload real como fixture para não
+regredir silenciosamente. A mais séria: `Customer360Screen` esperava
+`vehicles[]`, `recentServices[]` e `activeAppointments[]` que o backend nunca
+envia — a tela foi simplificada para o que a API de fato oferece.
 
 Antes de apresentar, rodar o smoke test contra o backend no ar:
 
