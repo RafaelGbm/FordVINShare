@@ -244,7 +244,7 @@ export default function HomeScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.alertTitle}>Avalie seu último serviço</Text>
               <Text style={styles.alertText}>
-                {SERVICE_TYPE_LABEL[pendingSurvey.serviceType]} · {pendingSurvey.dealership}
+                {pendingSurvey.serviceTypeLabel} · {pendingSurvey.dealership}
               </Text>
             </View>
             <View style={styles.alertCta}>

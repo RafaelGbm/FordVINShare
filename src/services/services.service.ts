@@ -30,23 +30,52 @@ export interface ListServicesParams {
   size?: number;
 }
 
+/**
+ * Shape the backend actually sends: the dealership and service type come as
+ * an id + a human label instead of the single fields the screens read.
+ */
+interface RawServiceRecord {
+  id: string;
+  vehicleId: string;
+  vehicleModel?: string;
+  dealershipId: string;
+  dealershipName: string;
+  serviceTypeId: ServiceType;
+  serviceTypeLabel?: string;
+  performedAt: string;
+  totalAmount: number;
+  summary: string;
+}
+
+function normalizeService(raw: RawServiceRecord): ServiceRecord {
+  return {
+    id: raw.id,
+    vehicleId: raw.vehicleId,
+    dealership: raw.dealershipName,
+    serviceType: raw.serviceTypeId,
+    performedAt: raw.performedAt,
+    totalAmount: raw.totalAmount,
+    summary: raw.summary,
+  };
+}
+
 export const servicesService = {
   async listMine(params: ListServicesParams = {}): Promise<PaginatedResponse<ServiceRecord>> {
-    const { data } = await api.get<PaginatedResponse<ServiceRecord>>('/me/services', {
+    const { data } = await api.get<PaginatedResponse<RawServiceRecord>>('/me/services', {
       params,
     });
-    return data;
+    return { ...data, content: data.content.map(normalizeService) };
   },
 
   async getById(serviceId: string): Promise<ServiceRecord> {
-    const { data } = await api.get<ServiceRecord>(`/services/${serviceId}`);
-    return data;
+    const { data } = await api.get<RawServiceRecord>(`/services/${serviceId}`);
+    return normalizeService(data);
   },
 
   async listByVehicle(vehicleId: string): Promise<PaginatedResponse<ServiceRecord>> {
-    const { data } = await api.get<PaginatedResponse<ServiceRecord>>(
+    const { data } = await api.get<PaginatedResponse<RawServiceRecord>>(
       `/vehicles/${vehicleId}/services`
     );
-    return data;
+    return { ...data, content: data.content.map(normalizeService) };
   },
 };

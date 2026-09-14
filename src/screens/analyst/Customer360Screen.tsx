@@ -7,24 +7,14 @@ import {
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { COLORS, ACCENTS } from '../../constants';
 import { useCustomer360, useCustomerTimeline } from '../../hooks/useCustomers';
-import {
-  useCheckInAppointment,
-  useCompleteAppointment,
-} from '../../hooks/useAppointments';
 import { ApiError } from '../../services/api';
-import {
-  AppointmentStatus,
-  AppointmentSummary,
-} from '../../services/appointments.service';
 import { LeadSegment } from '../../services/leads.service';
-import { ServiceType } from '../../services/services.service';
 import { WarrantyStatus } from '../../services/vehicles.service';
 import { TimelineEventType } from '../../services/customers.service';
 import type { IconName } from '../../types';
@@ -34,13 +24,6 @@ const SEGMENT_META: Record<LeadSegment, { label: string; color: string; bg: stri
   ECONOMICO: { label: 'Econômico', color: COLORS.secondary, bg: COLORS.primaryTintStrong },
   ESQUECIDO: { label: 'Esquecido', color: COLORS.warningText, bg: COLORS.warningTint },
   ABANDONO: { label: 'Abandono', color: COLORS.danger, bg: COLORS.dangerTint },
-};
-
-const SERVICE_LABEL: Record<ServiceType, string> = {
-  REVIEW: 'Revisão',
-  OIL_CHANGE: 'Troca de óleo',
-  WARRANTY: 'Garantia',
-  REPAIR: 'Reparo',
 };
 
 const WARRANTY_LABEL: Record<WarrantyStatus, string> = {
@@ -124,8 +107,7 @@ export default function Customer360Screen() {
     );
   }
 
-  const { customer, segment, riskScore, lifetime, vehicles, recentServices, activeAppointments } =
-    c360Query.data;
+  const { customer, segment, riskScore, lifetime, vehicle } = c360Query.data;
   const segmentMeta = SEGMENT_META[segment];
 
   return (
@@ -214,85 +196,35 @@ export default function Customer360Screen() {
           </View>
         </View>
 
-        <View style={styles.relationshipDates}>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>Primeiro atendimento</Text>
-            <Text style={styles.dateValue}>{formatDateBR(lifetime.firstServiceAt)}</Text>
+        {/* Vehicle */}
+        <Text style={styles.sectionTitle}>Veículo</Text>
+        <View style={styles.vehicleCard}>
+          <View style={styles.vehicleIcon}>
+            <MaterialCommunityIcons name="car-sports" size={24} color={COLORS.primary} />
           </View>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>Último atendimento</Text>
-            <Text style={styles.dateValue}>{formatDateBR(lifetime.lastServiceAt)}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.vehicleName}>
+              Ford {vehicle.model} <Text style={styles.vehicleYear}>{vehicle.year}</Text>
+            </Text>
+            <Text style={styles.vehicleSub}>{(vehicle.currentKm / 1000).toFixed(0)}k km</Text>
+            <View style={styles.warrantyRow}>
+              <View
+                style={[
+                  styles.warrantyDot,
+                  { backgroundColor: WARRANTY_COLOR[vehicle.warrantyStatus] },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.warrantyText,
+                  { color: WARRANTY_COLOR[vehicle.warrantyStatus] },
+                ]}
+              >
+                {WARRANTY_LABEL[vehicle.warrantyStatus]}
+              </Text>
+            </View>
           </View>
         </View>
-
-        {/* Active appointments */}
-        {activeAppointments.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Agendamentos ativos</Text>
-            {activeAppointments.map((a) => (
-              <ActiveAppointmentCard key={a.id} appointment={a} />
-            ))}
-          </>
-        )}
-
-        {/* Vehicles */}
-        <Text style={styles.sectionTitle}>Veículos ({vehicles.length})</Text>
-        {vehicles.map((v) => (
-          <View key={v.id} style={styles.vehicleCard}>
-            <View style={styles.vehicleIcon}>
-              <MaterialCommunityIcons name="car-sports" size={24} color={COLORS.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.vehicleName}>
-                Ford {v.model} <Text style={styles.vehicleYear}>{v.year}</Text>
-              </Text>
-              <Text style={styles.vehicleSub}>
-                {v.plate} · {(v.currentKm / 1000).toFixed(0)}k km
-              </Text>
-              <View style={styles.warrantyRow}>
-                <View
-                  style={[
-                    styles.warrantyDot,
-                    { backgroundColor: WARRANTY_COLOR[v.warrantyStatus] },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.warrantyText,
-                    { color: WARRANTY_COLOR[v.warrantyStatus] },
-                  ]}
-                >
-                  {WARRANTY_LABEL[v.warrantyStatus]}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ))}
-
-        {/* Recent services */}
-        <Text style={styles.sectionTitle}>Serviços recentes</Text>
-        {recentServices.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>Nenhum serviço registrado.</Text>
-          </View>
-        ) : (
-          recentServices.map((s) => (
-            <View key={s.id} style={styles.serviceRow}>
-              <View style={styles.serviceIcon}>
-                <MaterialCommunityIcons name="wrench" size={16} color={COLORS.white} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.serviceTitle}>{SERVICE_LABEL[s.serviceType]}</Text>
-                <Text style={styles.serviceSub} numberOfLines={1}>
-                  {s.dealership} · {formatDateBR(s.performedAt)}
-                </Text>
-              </View>
-              <Text style={styles.serviceAmount}>
-                {s.totalAmount > 0 ? formatCurrency(s.totalAmount) : 'Garantia'}
-              </Text>
-            </View>
-          ))
-        )}
 
         {/* Timeline */}
         <Text style={styles.sectionTitle}>Linha do tempo</Text>
@@ -339,117 +271,6 @@ export default function Customer360Screen() {
 
         <View style={{ height: 24 }} />
       </ScrollView>
-    </View>
-  );
-}
-
-const STATUS_LABEL: Record<AppointmentStatus, string> = {
-  SCHEDULED: 'Aguardando chegada',
-  CHECKED_IN: 'Em atendimento',
-  COMPLETED: 'Concluído',
-  CANCELED: 'Cancelado',
-  NO_SHOW: 'Não compareceu',
-};
-
-function ActiveAppointmentCard({ appointment }: { appointment: AppointmentSummary }) {
-  const checkInMutation = useCheckInAppointment();
-  const completeMutation = useCompleteAppointment();
-
-  const canCheckIn = appointment.status === 'SCHEDULED';
-  const canComplete = appointment.status === 'CHECKED_IN';
-  const busy = checkInMutation.isPending || completeMutation.isPending;
-
-  async function handleCheckIn() {
-    try {
-      await checkInMutation.mutateAsync(appointment.id);
-    } catch (e) {
-      const message =
-        e instanceof ApiError ? e.problem.detail || e.problem.title : 'Falha ao registrar chegada.';
-      Alert.alert('Erro', message);
-    }
-  }
-
-  function handleComplete() {
-    Alert.alert(
-      'Concluir atendimento',
-      'Confirmar que o serviço foi finalizado?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Concluir',
-          onPress: async () => {
-            try {
-              await completeMutation.mutateAsync({ id: appointment.id });
-            } catch (e) {
-              const message =
-                e instanceof ApiError
-                  ? e.problem.detail || e.problem.title
-                  : 'Falha ao concluir.';
-              Alert.alert('Erro', message);
-            }
-          },
-        },
-      ]
-    );
-  }
-
-  return (
-    <View style={styles.apptCard}>
-      <View style={styles.apptCardHead}>
-        <View style={[styles.apptIcon, { backgroundColor: COLORS.primaryTintStrong }]}>
-          <MaterialCommunityIcons name="calendar-check" size={20} color={COLORS.primary} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.apptTitle}>
-            {SERVICE_LABEL[appointment.serviceType]} · {appointment.vehicle.model}
-          </Text>
-          <Text style={styles.apptSub}>
-            {appointment.dealership.name} · {formatDateBR(appointment.scheduledAt)}
-          </Text>
-        </View>
-        <View style={styles.apptStatus}>
-          <Text style={styles.apptStatusText}>{STATUS_LABEL[appointment.status]}</Text>
-        </View>
-      </View>
-
-      {(canCheckIn || canComplete) && (
-        <View style={styles.apptActions}>
-          {canCheckIn && (
-            <TouchableOpacity
-              style={[styles.apptActionPrimary, busy && { opacity: 0.6 }]}
-              onPress={handleCheckIn}
-              disabled={busy}
-              activeOpacity={0.85}
-            >
-              {checkInMutation.isPending ? (
-                <ActivityIndicator color={COLORS.white} size="small" />
-              ) : (
-                <>
-                  <MaterialCommunityIcons name="account-arrow-right" size={16} color={COLORS.white} />
-                  <Text style={styles.apptActionPrimaryText}>Registrar chegada</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-          {canComplete && (
-            <TouchableOpacity
-              style={[styles.apptActionPrimary, busy && { opacity: 0.6 }]}
-              onPress={handleComplete}
-              disabled={busy}
-              activeOpacity={0.85}
-            >
-              {completeMutation.isPending ? (
-                <ActivityIndicator color={COLORS.white} size="small" />
-              ) : (
-                <>
-                  <MaterialCommunityIcons name="check-circle" size={16} color={COLORS.white} />
-                  <Text style={styles.apptActionPrimaryText}>Concluir atendimento</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
     </View>
   );
 }
@@ -605,66 +426,6 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 18, fontWeight: '800', color: COLORS.dark, marginTop: 8 },
   statLabel: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
 
-  relationshipDates: {
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    padding: 14,
-    marginTop: 8,
-    gap: 8,
-  },
-  dateRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  dateLabel: { fontSize: 12, color: COLORS.gray },
-  dateValue: { fontSize: 12, color: COLORS.dark, fontWeight: '700' },
-
-  /* Appointment */
-  apptCard: {
-    backgroundColor: COLORS.white,
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 8,
-  },
-  apptCardHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  apptActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  apptActionPrimary: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 6,
-  },
-  apptActionPrimaryText: {
-    color: COLORS.white,
-    fontWeight: '800',
-    fontSize: 13,
-  },
-  apptIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  apptTitle: { fontSize: 14, fontWeight: '700', color: COLORS.dark },
-  apptSub: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
-  apptStatus: {
-    backgroundColor: COLORS.primaryTintStrong,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  apptStatusText: { fontSize: 9, fontWeight: '800', color: COLORS.primary, letterSpacing: 0.3 },
-
   /* Vehicle */
   vehicleCard: {
     flexDirection: 'row',
@@ -689,28 +450,6 @@ const styles = StyleSheet.create({
   warrantyRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   warrantyDot: { width: 6, height: 6, borderRadius: 3 },
   warrantyText: { fontSize: 11, fontWeight: '700' },
-
-  /* Services */
-  serviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 8,
-  },
-  serviceIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  serviceTitle: { fontSize: 13, fontWeight: '700', color: COLORS.dark },
-  serviceSub: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
-  serviceAmount: { fontSize: 12, fontWeight: '800', color: COLORS.success },
 
   /* Timeline */
   timelineRow: { flexDirection: 'row', marginBottom: 4 },

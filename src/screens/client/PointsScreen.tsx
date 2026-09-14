@@ -76,7 +76,7 @@ export default function PointsScreen() {
   }, [transactions]);
 
   const totalRedemptions = useMemo(
-    () => transactions.filter((t) => t.type === 'SPEND').length,
+    () => transactions.filter((t) => t.type === 'REDEEM').length,
     [transactions]
   );
 
@@ -338,13 +338,13 @@ export default function PointsScreen() {
               <View
                 style={[
                   styles.historyIcon,
-                  { backgroundColor: h.type === 'EARN' ? COLORS.successTint : COLORS.dangerTint },
+                  { backgroundColor: h.points > 0 ? COLORS.successTint : COLORS.dangerTint },
                 ]}
               >
                 <MaterialCommunityIcons
-                  name={h.type === 'EARN' ? 'arrow-up' : 'arrow-down'}
+                  name={h.points > 0 ? 'arrow-up' : 'arrow-down'}
                   size={16}
-                  color={h.type === 'EARN' ? COLORS.success : COLORS.danger}
+                  color={h.points > 0 ? COLORS.success : COLORS.danger}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -354,7 +354,7 @@ export default function PointsScreen() {
               <Text
                 style={[
                   styles.historyPoints,
-                  { color: h.type === 'EARN' ? COLORS.success : COLORS.danger },
+                  { color: h.points > 0 ? COLORS.success : COLORS.danger },
                 ]}
               >
                 {h.points > 0 ? '+' : ''}

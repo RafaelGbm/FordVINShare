@@ -1,5 +1,4 @@
 import { api } from './api';
-import { ServiceType } from './services.service';
 
 export type NpsCategory =
   | 'ATENDIMENTO'
@@ -11,8 +10,17 @@ export type NpsCategory =
 
 export interface PendingSurvey {
   serviceId: string;
-  serviceType: ServiceType;
+  /** Human label only — the backend does not send the ServiceType code here. */
+  serviceTypeLabel: string;
   dealership: string;
+  performedAt: string;
+}
+
+/** Shape the backend actually sends. */
+interface RawPendingSurvey {
+  serviceId: string;
+  serviceTypeLabel: string;
+  dealershipName: string;
   performedAt: string;
 }
 
@@ -34,8 +42,13 @@ export interface SubmitNpsInput {
 
 export const npsService = {
   async listPending(): Promise<PendingSurvey[]> {
-    const { data } = await api.get<PendingSurvey[]>('/me/surveys/pending');
-    return data;
+    const { data } = await api.get<RawPendingSurvey[]>('/me/surveys/pending');
+    return data.map((raw) => ({
+      serviceId: raw.serviceId,
+      serviceTypeLabel: raw.serviceTypeLabel,
+      dealership: raw.dealershipName,
+      performedAt: raw.performedAt,
+    }));
   },
 
   async submit(serviceId: string, input: SubmitNpsInput): Promise<NpsResponse> {
