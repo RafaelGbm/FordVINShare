@@ -13,11 +13,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { COLORS, ACCENT_TINTS, ACCENTS } from '../../constants';
-import { useAuthStore } from '../../utils/store';
 import FordLogo from '../../components/FordLogo';
 import { StateBox } from '../../components/StateBox';
-import { authService } from '../../services/auth.service';
-import { useMe } from '../../hooks/useAuth';
+import { useLogout, useMe } from '../../hooks/useAuth';
 import {
   useKpis,
   useVinShareSeries,
@@ -98,7 +96,7 @@ function buildKpiCards(k: KpisWithDelta | undefined): KpiCard[] {
 }
 
 export default function DashboardScreen() {
-  const logout = useAuthStore((state) => state.logout);
+  const handleLogout = useLogout();
   const { data: me } = useMe();
   const [period, setPeriod] = useState<AnalyticsPeriod>('7d');
 
@@ -110,12 +108,6 @@ export default function DashboardScreen() {
   const chartPoints = seriesQuery.data?.points ?? [];
   const peakValue = seriesQuery.data?.peakPercent ?? 0;
   const topDealers = byDealershipQuery.data ?? [];
-
-  const handleLogout = async () => {
-    await authService.logout();
-    logout();
-    router.replace('/');
-  };
 
   return (
     <View style={styles.root}>

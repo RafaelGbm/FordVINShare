@@ -12,9 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
-import { useAuthStore } from '../../utils/store';
-import { authService } from '../../services/auth.service';
-import { useMe } from '../../hooks/useAuth';
+import { useLogout, useMe } from '../../hooks/useAuth';
 import { useMyVehicles } from '../../hooks/useVehicles';
 import { useMyServices } from '../../hooks/useServices';
 import { useLoyaltyBalance } from '../../hooks/useLoyalty';
@@ -33,7 +31,7 @@ function warrantyMeta(status: WarrantyStatus) {
 }
 
 export default function ProfileScreen() {
-  const logout = useAuthStore((state) => state.logout);
+  const handleLogout = useLogout();
   const { data: me } = useMe();
   const { data: vehicles } = useMyVehicles();
   const { data: servicesPage } = useMyServices({ size: 1 });
@@ -50,11 +48,6 @@ export default function ProfileScreen() {
       .map((n) => n[0])
       .join('') ?? '—';
 
-  const handleLogout = async () => {
-    await authService.logout();
-    logout();
-    router.replace('/');
-  };
 
   return (
     <View style={styles.root}>
