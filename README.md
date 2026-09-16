@@ -81,7 +81,7 @@ npm start          # 'a' Android, 'i' iOS, 'w' Web
   fallback automático pro centro de São Paulo
 - **Pontos**: saldo + extrato + catálogo de rewards + resgate
 - **Chat (Ford AI)**: sessão + histórico de mensagens; o backend integra
-  com Claude API server-side, app só consome
+  com a API do Gemini server-side, app só consome
 - **Perfil**: `/me`, lista de veículos, atualização de odômetro, logout
 
 ### Analista
@@ -207,10 +207,11 @@ Faixas que viram `status` no lead:
 | Testes | `npm test` |
 | Validar back real | `EMAIL=… PASSWORD=… bash scripts/verify-backend.sh` |
 
-49 testes em 9 suítes:
+50 testes em 10 suítes:
 
 | Suíte | Cobre |
 |---|---|
+| `hooks/__tests__/useAuth` | `queryClient.clear()` no logout — sem isso, trocar de conta reaproveita dado em cache da conta anterior |
 | `services/__tests__/api` | `ApiError`, o envelope de resposta e a tradução de erros que o backend não descreve (401 sem corpo, 5xx, timeout, falta de rede) |
 | `services/__tests__/appointments.service` | Normalização do `Page` de `/me/appointments` e dos campos achatados (`dealershipId`+`Name`, `serviceTypeId`+`Label`) em todo o CRUD de agendamento |
 | `services/__tests__/services.service` | Mesmo achatamento em `/me/services` e `/vehicles/{id}/services` |
