@@ -305,13 +305,10 @@ const styles = StyleSheet.create({
   },
   scoreGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    justifyContent: 'space-between',
+    gap: 4,
   },
   scoreBtn: {
-    width: '8.8%',
-    minWidth: 28,
+    flex: 1,
     aspectRatio: 1,
     backgroundColor: COLORS.background,
     borderRadius: 8,
@@ -320,7 +317,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: COLORS.surfaceAlt,
   },
-  scoreBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.dark },
+  scoreBtnText: { fontSize: 12, fontWeight: '800', color: COLORS.dark },
   scoreLegend: {
     flexDirection: 'row',
     justifyContent: 'space-between',

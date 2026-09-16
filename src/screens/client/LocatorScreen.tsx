@@ -533,8 +533,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  dealerName: { fontSize: 15, fontWeight: '800', color: COLORS.dark },
-  dealerAddr: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
+  dealerName: { fontSize: 15, fontWeight: '800', color: COLORS.dark, flexShrink: 1 },
+  dealerAddr: { fontSize: 12, color: COLORS.gray, marginTop: 2, flexShrink: 1 },
   dealerDistance: {
     fontSize: 11,
     fontWeight: '800',

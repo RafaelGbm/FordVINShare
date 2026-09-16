@@ -250,11 +250,15 @@ export default function SchedulingScreen() {
             <Text style={styles.sectionTitle}>Onde deseja ser atendido?</Text>
             <Text style={styles.sectionSub}>Concessionárias próximas a você</Text>
 
-            <View style={styles.mapPreview}>
+            <TouchableOpacity
+              style={styles.mapPreview}
+              onPress={() => router.push('/(client)/locator')}
+              activeOpacity={0.85}
+            >
               <MaterialCommunityIcons name="map-outline" size={32} color={COLORS.primary} />
               <Text style={styles.mapPreviewText}>Ver no mapa</Text>
               <MaterialCommunityIcons name="chevron-right" size={20} color={COLORS.primary} />
-            </View>
+            </TouchableOpacity>
 
             {dealershipsQuery.isLoading && (
               <View style={{ paddingVertical: 32, alignItems: 'center' }}>
@@ -587,8 +591,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   serviceHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  serviceName: { fontSize: 15, fontWeight: '800', color: COLORS.dark },
-  serviceDesc: { fontSize: 12, color: COLORS.gray, marginBottom: 6 },
+  serviceName: { fontSize: 15, fontWeight: '800', color: COLORS.dark, flexShrink: 1 },
+  serviceDesc: { fontSize: 12, color: COLORS.gray, marginBottom: 6, flexShrink: 1 },
   serviceMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   serviceMetaText: { fontSize: 11, color: COLORS.gray, fontWeight: '600' },
   tag: {
@@ -637,8 +641,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  dealerName: { fontSize: 15, fontWeight: '800', color: COLORS.dark },
-  dealerAddr: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
+  dealerName: { fontSize: 15, fontWeight: '800', color: COLORS.dark, flexShrink: 1 },
+  dealerAddr: { fontSize: 12, color: COLORS.gray, marginTop: 2, flexShrink: 1 },
   dealerMeta: { flexDirection: 'row', gap: 12, marginTop: 8 },
   dealerMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   dealerMetaText: { fontSize: 11, color: COLORS.gray, fontWeight: '600' },

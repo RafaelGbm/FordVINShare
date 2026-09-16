@@ -175,7 +175,7 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={0}
     >
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
@@ -471,6 +471,7 @@ const styles = StyleSheet.create({
 
   bubble: {
     maxWidth: '78%',
+    flexShrink: 1,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 16,
@@ -488,7 +489,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderBottomRightRadius: 4,
   },
-  bubbleText: { fontSize: 14, color: COLORS.dark, lineHeight: 20 },
+  bubbleText: { fontSize: 14, color: COLORS.dark, lineHeight: 20, flexShrink: 1 },
   bubbleTextUser: { color: COLORS.white },
   bubbleTime: {
     fontSize: 10,

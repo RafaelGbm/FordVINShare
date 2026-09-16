@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Switch,
+  Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -38,7 +39,6 @@ export default function ProfileScreen() {
   const { data: loyalty } = useLoyaltyBalance();
   const [notifPush, setNotifPush] = useState(true);
   const [notifEmail, setNotifEmail] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
 
   const primaryVehicle = vehicles?.[0];
   const initials =
@@ -197,14 +197,6 @@ export default function ProfileScreen() {
             value={notifEmail}
             onChange={setNotifEmail}
           />
-          <Divider />
-          <ToggleRow
-            icon="weather-night"
-            label="Modo escuro"
-            sub="Tema escuro do aplicativo"
-            value={darkMode}
-            onChange={setDarkMode}
-          />
         </View>
 
         {/* Security & legal */}
@@ -212,7 +204,18 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <MenuRow icon="lock-outline" label="Alterar senha" />
           <Divider />
-          <MenuRow icon="shield-check-outline" label="Autenticação em 2 fatores" badge="Ativada" badgeColor={COLORS.success} />
+          <MenuRow
+            icon="shield-check-outline"
+            label="Autenticação em 2 fatores"
+            badge="Em breve"
+            badgeColor={COLORS.gray}
+            onPress={() =>
+              Alert.alert(
+                'Em breve',
+                'A autenticação em dois fatores ainda não está disponível. Vamos avisar você assim que for lançada.'
+              )
+            }
+          />
           <Divider />
           <MenuRow icon="file-document-outline" label="Termos de uso" />
           <Divider />
