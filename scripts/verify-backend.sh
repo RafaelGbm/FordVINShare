@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Smoke test the deployed backend against the contract the app expects.
-# Mirrors the checklist from docs/BACKEND_RESPONSE_2026-05-24.md.
 #
 # Usage:
 #   EMAIL=<analista/admin> PASSWORD=<senha> \
