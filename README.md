@@ -157,11 +157,13 @@ de instalado.
 Os tokens vão pro SecureStore, e o interceptor do axios cola o
 `Authorization: Bearer …` em toda chamada sozinho. Quando dá 401, ele
 dispara um `POST /auth/refresh` (só uma vez, mesmo com várias chamadas
-simultâneas) e repete a requisição original; se o refresh também falhar,
-limpa o SecureStore e manda de volta pro login.
+simultâneas) e repete a requisição original. Se a API recusar o refresh
+(400/401), limpa o SecureStore e manda de volta pro login; se o refresh falhar
+por rate limit, erro do servidor ou rede, só a requisição falha e a sessão continua.
 
-A `role` vem de dentro do próprio JWT e decide se `app/index.tsx` abre em
-`(client)` ou `(analyst)` — ADMIN entra como analyst.
+A `role` vem da resposta do login e de `GET /me` (o app não decodifica o JWT) e
+decide se `app/index.tsx` abre em `(client)` ou `(analyst)`. ADMIN entra como
+analyst, mas as ações de contato com leads são só do analista da concessionária.
 
 ## Modo offline
 

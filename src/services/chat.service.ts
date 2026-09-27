@@ -23,6 +23,13 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+/** The API serializes the role as USER / ASSISTANT. */
+type RawChatMessage = Omit<ChatMessage, 'role'> & { role: string };
+
+function normalizeMessage(message: RawChatMessage): ChatMessage {
+  return { ...message, role: message.role.toLowerCase() === 'user' ? 'user' : 'assistant' };
+}
+
 export interface ChatSession {
   sessionId: string;
   startedAt: string;
@@ -35,15 +42,15 @@ export const chatService = {
   },
 
   async sendMessage(sessionId: string, message: string): Promise<ChatMessage> {
-    const { data } = await api.post<ChatMessage>(
+    const { data } = await api.post<RawChatMessage>(
       `/chat/sessions/${sessionId}/messages`,
       { message }
     );
-    return data;
+    return normalizeMessage(data);
   },
 
   async getHistory(sessionId: string): Promise<ChatMessage[]> {
-    const { data } = await api.get<ChatMessage[]>(`/chat/sessions/${sessionId}/messages`);
-    return data;
+    const { data } = await api.get<RawChatMessage[]>(`/chat/sessions/${sessionId}/messages`);
+    return data.map(normalizeMessage);
   },
 };
