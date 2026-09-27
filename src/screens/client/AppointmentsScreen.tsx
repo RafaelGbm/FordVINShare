@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  StatusBar,
   Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,6 +12,7 @@ import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
 import { StateBox } from '../../components/StateBox';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import {
   useCancelAppointment,
   useMyAppointments,
@@ -117,169 +117,135 @@ export default function AppointmentsScreen() {
   }
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+    <HeroScreen
+      blobs={[{ size: 180, top: -50, right: -40 }]}
+      heroPaddingBottom={24}
+      contentContainerStyle={styles.scrollContent}
+      afterHero={
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filters}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+        >
+          {FILTERS.map((f) => {
+            const active = filter === f.id;
+            return (
+              <TouchableOpacity
+                key={f.id}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+                onPress={() => setFilter(f.id)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.filterText, active && styles.filterTextActive]}>
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      }
+      bodyChildren={
+        <>
+          {isLoading && <StateBox variant="loading" message="Carregando agendamentos..." />}
 
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob} />
+          {error && !isLoading && (
+            <StateBox
+              variant="error"
+              title="Falha ao carregar"
+              message={
+                error instanceof ApiError
+                  ? error.problem.detail || error.problem.title
+                  : 'Tente novamente em instantes'
+              }
+              onRetry={() => refetch()}
+            />
+          )}
 
-        <View style={styles.heroTop}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="chevron-left" size={24} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.heroTitle}>Meus agendamentos</Text>
-          <View style={{ width: 40 }} />
-        </View>
+          {!isLoading && !error && visible.length === 0 && (
+            <StateBox
+              variant="empty"
+              iconName="calendar-blank-outline"
+              title="Sem agendamentos"
+              message="Você ainda não tem agendamentos nessa categoria."
+            />
+          )}
 
-        <Text style={styles.heroSub}>Acompanhe próximos atendimentos e histórico</Text>
+          {!isLoading && !error && visible.map((a) => {
+            const meta = STATUS_META[a.status];
+            const canCancel = a.status === 'SCHEDULED';
+            return (
+              <View key={a.id} style={styles.card}>
+                <View style={styles.cardHead}>
+                  <View style={[styles.serviceIcon, { backgroundColor: COLORS.primaryTintStrong }]}>
+                    <MaterialCommunityIcons
+                      name={SERVICE_ICON[a.serviceType]}
+                      size={22}
+                      color={COLORS.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.serviceName}>{SERVICE_LABEL[a.serviceType]}</Text>
+                    <Text style={styles.vehicleName}>{a.vehicle.model}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
+                    <Text style={[styles.statusText, { color: meta.color }]}>{meta.label}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.cardDetails}>
+                  <View style={styles.detailRow}>
+                    <MaterialCommunityIcons name="calendar" size={14} color={COLORS.gray} />
+                    <Text style={styles.detailText}>
+                      {formatDateBR(a.scheduledAt)} às {formatTimeBR(a.scheduledAt)}
+                    </Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <MaterialCommunityIcons name="store" size={14} color={COLORS.gray} />
+                    <Text style={styles.detailText} numberOfLines={1}>
+                      {a.dealership.name}
+                    </Text>
+                  </View>
+                </View>
+
+                {canCancel && (
+                  <TouchableOpacity
+                    style={[
+                      styles.cancelBtn,
+                      cancelMutation.isPending && { opacity: 0.5 },
+                    ]}
+                    onPress={() => handleCancel(a.id)}
+                    disabled={cancelMutation.isPending}
+                    activeOpacity={0.85}
+                  >
+                    <MaterialCommunityIcons name="close-circle-outline" size={16} color={COLORS.danger} />
+                    <Text style={styles.cancelBtnText}>Cancelar agendamento</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })}
+
+          <View style={{ height: 20 }} />
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <HeroIconButton icon="chevron-left" iconSize={24} onPress={() => router.back()} />
+        <Text style={styles.heroTitle}>Meus agendamentos</Text>
+        <View style={{ width: 40 }} />
       </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filters}
-        contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-      >
-        {FILTERS.map((f) => {
-          const active = filter === f.id;
-          return (
-            <TouchableOpacity
-              key={f.id}
-              style={[styles.filterChip, active && styles.filterChipActive]}
-              onPress={() => setFilter(f.id)}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.filterText, active && styles.filterTextActive]}>
-                {f.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {isLoading && <StateBox variant="loading" message="Carregando agendamentos..." />}
-
-        {error && !isLoading && (
-          <StateBox
-            variant="error"
-            title="Falha ao carregar"
-            message={
-              error instanceof ApiError
-                ? error.problem.detail || error.problem.title
-                : 'Tente novamente em instantes'
-            }
-            onRetry={() => refetch()}
-          />
-        )}
-
-        {!isLoading && !error && visible.length === 0 && (
-          <StateBox
-            variant="empty"
-            iconName="calendar-blank-outline"
-            title="Sem agendamentos"
-            message="Você ainda não tem agendamentos nessa categoria."
-          />
-        )}
-
-        {!isLoading && !error && visible.map((a) => {
-          const meta = STATUS_META[a.status];
-          const canCancel = a.status === 'SCHEDULED';
-          return (
-            <View key={a.id} style={styles.card}>
-              <View style={styles.cardHead}>
-                <View style={[styles.serviceIcon, { backgroundColor: COLORS.primaryTintStrong }]}>
-                  <MaterialCommunityIcons
-                    name={SERVICE_ICON[a.serviceType]}
-                    size={22}
-                    color={COLORS.primary}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.serviceName}>{SERVICE_LABEL[a.serviceType]}</Text>
-                  <Text style={styles.vehicleName}>{a.vehicle.model}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: meta.bg }]}>
-                  <Text style={[styles.statusText, { color: meta.color }]}>{meta.label}</Text>
-                </View>
-              </View>
-
-              <View style={styles.cardDetails}>
-                <View style={styles.detailRow}>
-                  <MaterialCommunityIcons name="calendar" size={14} color={COLORS.gray} />
-                  <Text style={styles.detailText}>
-                    {formatDateBR(a.scheduledAt)} às {formatTimeBR(a.scheduledAt)}
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <MaterialCommunityIcons name="store" size={14} color={COLORS.gray} />
-                  <Text style={styles.detailText} numberOfLines={1}>
-                    {a.dealership.name}
-                  </Text>
-                </View>
-              </View>
-
-              {canCancel && (
-                <TouchableOpacity
-                  style={[
-                    styles.cancelBtn,
-                    cancelMutation.isPending && { opacity: 0.5 },
-                  ]}
-                  onPress={() => handleCancel(a.id)}
-                  disabled={cancelMutation.isPending}
-                  activeOpacity={0.85}
-                >
-                  <MaterialCommunityIcons name="close-circle-outline" size={16} color={COLORS.danger} />
-                  <Text style={styles.cancelBtnText}>Cancelar agendamento</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          );
-        })}
-
-        <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+      <Text style={styles.heroSub}>Acompanhe próximos atendimentos e histórico</Text>
+    </HeroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    overflow: 'hidden',
-  },
-  heroBlob: {
-    position: 'absolute',
-    top: -50,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
   heroSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
@@ -299,12 +265,6 @@ const styles = StyleSheet.create({
   filterText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)' },
   filterTextActive: { color: COLORS.primary },
 
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { padding: 16, paddingTop: 22 },
 
   card: {

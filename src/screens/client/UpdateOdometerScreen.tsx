@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  StatusBar,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
@@ -15,6 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { COLORS } from '../../constants';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { StateBox } from '../../components/StateBox';
 import { useMyVehicles } from '../../hooks/useVehicles';
 import { useUpdateOdometer } from '../../hooks/useUpdateOdometer';
@@ -55,27 +55,16 @@ export default function UpdateOdometerScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      <View style={styles.hero}>
-        <View style={styles.heroBlob} />
-        <View style={styles.heroTop}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="close" size={22} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.heroTitle}>Atualizar km</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <Text style={styles.heroSub}>
-          Manter a quilometragem em dia ajuda a Ford a avisar antes da próxima revisão.
-        </Text>
-      </View>
-
-      <View style={styles.body}>
+      <HeroScreen
+        blobs={[{ size: 180, top: -50, right: -40 }]}
+        heroPaddingBottom={30}
+        scrollable={false}
+        contentContainerStyle={styles.body}
+        bodyChildren={
+          <>
         {!vehicle && (
           <StateBox
             variant="error"
@@ -142,54 +131,33 @@ export default function UpdateOdometerScreen() {
             </TouchableOpacity>
           </>
         )}
-      </View>
+          </>
+        }
+      >
+        <View style={styles.heroTop}>
+          <HeroIconButton icon="close" onPress={() => router.back()} />
+          <Text style={styles.heroTitle}>Atualizar km</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <Text style={styles.heroSub}>
+          Manter a quilometragem em dia ajuda a Ford a avisar antes da próxima revisão.
+        </Text>
+      </HeroScreen>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-    overflow: 'hidden',
-  },
-  heroBlob: {
-    position: 'absolute',
-    top: -50,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 14,
   },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
   heroSub: { color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 18 },
 
-  body: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 20,
-  },
+  body: { padding: 20 },
 
   vehicleCard: {
     flexDirection: 'row',

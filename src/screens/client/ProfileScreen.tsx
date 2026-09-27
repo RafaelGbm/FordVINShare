@@ -3,9 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  StatusBar,
   Switch,
   Alert,
 } from 'react-native';
@@ -13,6 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { useLogout, useMe } from '../../hooks/useAuth';
 import { useMyVehicles } from '../../hooks/useVehicles';
 import { useMyServices } from '../../hooks/useServices';
@@ -50,67 +49,16 @@ export default function ProfileScreen() {
 
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob1} />
-        <View style={styles.heroBlob2} />
-
-        <View style={styles.heroTop}>
-          <Text style={styles.heroLabel}>Minha conta</Text>
-          <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="pencil-outline" size={18} color={COLORS.white} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarBig}>
-            <Text style={styles.avatarBigText}>{initials}</Text>
-            <View style={styles.avatarBadge}>
-              <MaterialCommunityIcons name="check-decagram" size={18} color={COLORS.primary} />
-            </View>
-          </View>
-          <Text style={styles.profileName}>{me?.fullName ?? '—'}</Text>
-          <View style={styles.profileTier}>
-            <MaterialCommunityIcons name="medal" size={12} color={COLORS.warningStrong} />
-            <Text style={styles.profileTierText}>
-              Ford Gold{me?.createdAt && ` · Cliente desde ${new Date(me.createdAt).getFullYear()}`}
-            </Text>
-          </View>
-
-          <View style={styles.profileStats}>
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatValue}>
-                {servicesPage?.totalElements ?? '—'}
-              </Text>
-              <Text style={styles.profileStatLabel}>serviços</Text>
-            </View>
-            <View style={styles.profileStatSep} />
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatValue}>
-                {loyalty ? loyalty.balance.toLocaleString('pt-BR') : '—'}
-              </Text>
-              <Text style={styles.profileStatLabel}>pontos</Text>
-            </View>
-            <View style={styles.profileStatSep} />
-            <View style={styles.profileStat}>
-              <Text style={styles.profileStatValue}>
-                {vehicles?.length ?? '—'}
-              </Text>
-              <Text style={styles.profileStatLabel}>veículos</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <HeroScreen
+      blobs={[
+        { size: 180, top: -50, right: -40 },
+        { size: 120, bottom: -30, left: -30 },
+      ]}
+      heroPaddingBottom={70}
+      overlap={-40}
+      contentContainerStyle={styles.scrollContent}
+      bodyChildren={
+        <>
         {/* Personal data */}
         <SectionTitle>Dados pessoais</SectionTitle>
         <View style={styles.card}>
@@ -245,8 +193,54 @@ export default function ProfileScreen() {
         <Text style={styles.versionText}>Ford VIN Share · v0.1.0</Text>
 
         <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <Text style={styles.heroLabel}>Minha conta</Text>
+        <HeroIconButton icon="pencil-outline" size={36} iconSize={18} />
+      </View>
+
+      {/* Profile Card */}
+      <View style={styles.profileCard}>
+        <View style={styles.avatarBig}>
+          <Text style={styles.avatarBigText}>{initials}</Text>
+          <View style={styles.avatarBadge}>
+            <MaterialCommunityIcons name="check-decagram" size={18} color={COLORS.primary} />
+          </View>
+        </View>
+        <Text style={styles.profileName}>{me?.fullName ?? '—'}</Text>
+        <View style={styles.profileTier}>
+          <MaterialCommunityIcons name="medal" size={12} color={COLORS.warningStrong} />
+          <Text style={styles.profileTierText}>
+            Ford Gold{me?.createdAt && ` · Cliente desde ${new Date(me.createdAt).getFullYear()}`}
+          </Text>
+        </View>
+
+        <View style={styles.profileStats}>
+          <View style={styles.profileStat}>
+            <Text style={styles.profileStatValue}>
+              {servicesPage?.totalElements ?? '—'}
+            </Text>
+            <Text style={styles.profileStatLabel}>serviços</Text>
+          </View>
+          <View style={styles.profileStatSep} />
+          <View style={styles.profileStat}>
+            <Text style={styles.profileStatValue}>
+              {loyalty ? loyalty.balance.toLocaleString('pt-BR') : '—'}
+            </Text>
+            <Text style={styles.profileStatLabel}>pontos</Text>
+          </View>
+          <View style={styles.profileStatSep} />
+          <View style={styles.profileStat}>
+            <Text style={styles.profileStatValue}>
+              {vehicles?.length ?? '—'}
+            </Text>
+            <Text style={styles.profileStatLabel}>veículos</Text>
+          </View>
+        </View>
+      </View>
+    </HeroScreen>
   );
 }
 
@@ -347,34 +341,6 @@ function MenuRow({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  /* Hero */
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 70,
-    overflow: 'hidden',
-  },
-  heroBlob1: {
-    position: 'absolute',
-    top: -50,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  heroBlob2: {
-    position: 'absolute',
-    bottom: -30,
-    left: -30,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
   heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -382,14 +348,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   heroLabel: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
   /* Profile Card */
   profileCard: {
@@ -444,14 +402,6 @@ const styles = StyleSheet.create({
   profileStatLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600', marginTop: 2 },
   profileStatSep: { width: 1, backgroundColor: 'rgba(255,255,255,0.15)' },
 
-  /* Scroll */
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -40,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { padding: 20, paddingTop: 26 },
 
   sectionTitle: {

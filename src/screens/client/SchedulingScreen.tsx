@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  StatusBar,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -13,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { COLORS } from '../../constants';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { useMyVehicles } from '../../hooks/useVehicles';
 import { useDealerships, useDealershipAvailability } from '../../hooks/useDealerships';
 import {
@@ -127,62 +127,39 @@ export default function SchedulingScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob} />
-        <View style={styles.heroTop}>
+    <HeroScreen
+      blobs={[{ size: 180, top: -70, right: -50 }]}
+      heroPaddingHorizontal={16}
+      heroPaddingBottom={40}
+      overlap={-20}
+      contentContainerStyle={styles.scrollContent}
+      footer={
+        <View style={styles.footer}>
           <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={handleBack}
-            disabled={step === 1}
+            style={[styles.cta, !canContinue && styles.ctaDisabled]}
+            onPress={handleNext}
+            disabled={!canContinue}
+            activeOpacity={0.85}
           >
-            <MaterialCommunityIcons
-              name="chevron-left"
-              size={26}
-              color={step === 1 ? 'rgba(255,255,255,0.4)' : COLORS.white}
-            />
+            {createMutation.isPending ? (
+              <ActivityIndicator color={COLORS.white} size="small" />
+            ) : (
+              <>
+                <Text style={styles.ctaText}>
+                  {step === 3 ? 'Confirmar agendamento' : 'Continuar'}
+                </Text>
+                <MaterialCommunityIcons
+                  name={step === 3 ? 'check-circle' : 'arrow-right'}
+                  size={20}
+                  color={COLORS.white}
+                />
+              </>
+            )}
           </TouchableOpacity>
-          <Text style={styles.heroTitle}>Agendar Serviço</Text>
-          <View style={{ width: 40 }} />
         </View>
-
-        {/* Stepper */}
-        <View style={styles.stepper}>
-          {[1, 2, 3].map((s) => (
-            <View key={s} style={styles.stepWrap}>
-              <View
-                style={[
-                  styles.stepDot,
-                  step >= s && styles.stepDotActive,
-                  step === s && styles.stepDotCurrent,
-                ]}
-              >
-                {step > s ? (
-                  <MaterialCommunityIcons name="check" size={14} color={COLORS.primary} />
-                ) : (
-                  <Text style={[styles.stepNum, step >= s && styles.stepNumActive]}>{s}</Text>
-                )}
-              </View>
-              {s < 3 && <View style={[styles.stepLine, step > s && styles.stepLineActive]} />}
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.stepLabels}>
-          <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>Serviço</Text>
-          <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>Local</Text>
-          <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>Data</Text>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      }
+      bodyChildren={
+        <>
         {/* STEP 1 — Service */}
         {step === 1 && (
           <View>
@@ -419,33 +396,49 @@ export default function SchedulingScreen() {
         )}
 
         <View style={{ height: 100 }} />
-      </ScrollView>
-
-      {/* Footer fixed CTA */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.cta, !canContinue && styles.ctaDisabled]}
-          onPress={handleNext}
-          disabled={!canContinue}
-          activeOpacity={0.85}
-        >
-          {createMutation.isPending ? (
-            <ActivityIndicator color={COLORS.white} size="small" />
-          ) : (
-            <>
-              <Text style={styles.ctaText}>
-                {step === 3 ? 'Confirmar agendamento' : 'Continuar'}
-              </Text>
-              <MaterialCommunityIcons
-                name={step === 3 ? 'check-circle' : 'arrow-right'}
-                size={20}
-                color={COLORS.white}
-              />
-            </>
-          )}
-        </TouchableOpacity>
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <HeroIconButton
+          icon="chevron-left"
+          iconSize={26}
+          onPress={handleBack}
+          disabled={step === 1}
+          color={step === 1 ? 'rgba(255,255,255,0.4)' : COLORS.white}
+        />
+        <Text style={styles.heroTitle}>Agendar Serviço</Text>
+        <View style={{ width: 40 }} />
       </View>
-    </View>
+
+      {/* Stepper */}
+      <View style={styles.stepper}>
+        {[1, 2, 3].map((s) => (
+          <View key={s} style={styles.stepWrap}>
+            <View
+              style={[
+                styles.stepDot,
+                step >= s && styles.stepDotActive,
+                step === s && styles.stepDotCurrent,
+              ]}
+            >
+              {step > s ? (
+                <MaterialCommunityIcons name="check" size={14} color={COLORS.primary} />
+              ) : (
+                <Text style={[styles.stepNum, step >= s && styles.stepNumActive]}>{s}</Text>
+              )}
+            </View>
+            {s < 3 && <View style={[styles.stepLine, step > s && styles.stepLineActive]} />}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.stepLabels}>
+        <Text style={[styles.stepLabel, step === 1 && styles.stepLabelActive]}>Serviço</Text>
+        <Text style={[styles.stepLabel, step === 2 && styles.stepLabelActive]}>Local</Text>
+        <Text style={[styles.stepLabel, step === 3 && styles.stepLabelActive]}>Data</Text>
+      </View>
+    </HeroScreen>
   );
 }
 
@@ -464,38 +457,11 @@ function SummaryRow({ icon, label, value }: { icon: IconName; label: string; val
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  /* Hero */
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 40,
-    overflow: 'hidden',
-  },
-  heroBlob: {
-    position: 'absolute',
-    top: -70,
-    right: -50,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 24,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
 
@@ -546,14 +512,6 @@ const styles = StyleSheet.create({
   },
   stepLabelActive: { color: COLORS.white },
 
-  /* Scroll */
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -20,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { padding: 20, paddingTop: 24 },
 
   sectionTitle: { fontSize: 22, fontWeight: '800', color: COLORS.dark, marginBottom: 4 },

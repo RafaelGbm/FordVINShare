@@ -3,9 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  StatusBar,
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
@@ -14,6 +12,7 @@ import { router } from 'expo-router';
 
 import { COLORS, ACCENT_TINTS, ACCENTS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { StateBox } from '../../components/StateBox';
 import { useLogout, useMe } from '../../hooks/useAuth';
 import {
@@ -110,43 +109,16 @@ export default function DashboardScreen() {
   const topDealers = byDealershipQuery.data ?? [];
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob1} />
-        <View style={styles.heroBlob2} />
-
-        <View style={styles.heroTop}>
-          <FordLogo width={90} height={36} />
-          <View style={styles.heroActions}>
-            <TouchableOpacity style={styles.iconBtn}>
-              <MaterialCommunityIcons name="bell-outline" size={20} color={COLORS.white} />
-              <View style={styles.notifBadge}>
-                <Text style={styles.notifBadgeText}>3</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} onPress={handleLogout}>
-              <MaterialCommunityIcons name="logout-variant" size={20} color={COLORS.white} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.heroGreeting}>
-          <Text style={styles.heroHello}>Olá, {me?.fullName?.split(' ')[0] ?? '—'}</Text>
-          <View style={styles.dealerTag}>
-            <MaterialCommunityIcons name="store" size={12} color={COLORS.white} />
-            <Text style={styles.dealerText}>Ford SP Centro · Analista</Text>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <HeroScreen
+      blobs={[
+        { size: 200, top: -50, right: -40 },
+        { size: 130, bottom: -30, left: -30 },
+      ]}
+      heroPaddingBottom={40}
+      overlap={-22}
+      contentContainerStyle={styles.scrollContent}
+      bodyChildren={
+        <>
         {/* Period filter */}
         <View style={styles.periodRow}>
           <Text style={styles.sectionLabel}>Visão geral</Text>
@@ -396,40 +368,29 @@ export default function DashboardScreen() {
         </View>
 
         <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <FordLogo width={90} height={36} />
+        <View style={styles.heroActions}>
+          <HeroIconButton icon="bell-outline" size={38} badge="3" />
+          <HeroIconButton icon="logout-variant" size={38} onPress={handleLogout} />
+        </View>
+      </View>
+
+      <View style={styles.heroGreeting}>
+        <Text style={styles.heroHello}>Olá, {me?.fullName?.split(' ')[0] ?? '—'}</Text>
+        <View style={styles.dealerTag}>
+          <MaterialCommunityIcons name="store" size={12} color={COLORS.white} />
+          <Text style={styles.dealerText}>Ford SP Centro · Analista</Text>
+        </View>
+      </View>
+    </HeroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  /* Hero */
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    overflow: 'hidden',
-  },
-  heroBlob1: {
-    position: 'absolute',
-    top: -50,
-    right: -40,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  heroBlob2: {
-    position: 'absolute',
-    bottom: -30,
-    left: -30,
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
   heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -437,28 +398,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   heroActions: { flexDirection: 'row', gap: 8 },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  notifBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: COLORS.danger,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notifBadgeText: { color: COLORS.white, fontSize: 9, fontWeight: '800' },
   heroGreeting: {},
   heroHello: { color: COLORS.white, fontSize: 24, fontWeight: '800', marginBottom: 6 },
   dealerTag: {
@@ -473,14 +412,6 @@ const styles = StyleSheet.create({
   },
   dealerText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
 
-  /* Scroll */
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -22,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { padding: 16, paddingTop: 22 },
 
   /* Period */

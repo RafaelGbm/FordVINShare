@@ -6,12 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  StatusBar,
   Dimensions,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS } from '../../constants';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { StateBox } from '../../components/StateBox';
 import { useDealerships } from '../../hooks/useDealerships';
 import { useUserLocation } from '../../hooks/useUserLocation';
@@ -66,42 +66,13 @@ export default function LocatorScreen() {
   }, [data, search]);
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      {/* Hero with search */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob} />
-
-        <View style={styles.heroHead}>
-          <View>
-            <Text style={styles.heroSub}>Localizador</Text>
-            <Text style={styles.heroTitle}>Concessionárias Ford</Text>
-          </View>
-          <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="tune-variant" size={20} color={COLORS.white} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.searchBar}>
-          <MaterialCommunityIcons name="magnify" size={20} color={COLORS.gray} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar por nome ou bairro..."
-            placeholderTextColor={COLORS.gray}
-            value={search}
-            onChangeText={setSearch}
-            autoCorrect={false}
-          />
-          <MaterialCommunityIcons name="crosshairs-gps" size={20} color={COLORS.primary} />
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <HeroScreen
+      blobs={[{ size: 200, top: -60, right: -40 }]}
+      heroPaddingBottom={50}
+      overlap={-28}
+      contentContainerStyle={styles.scrollContent}
+      bodyChildren={
+        <>
         {location.isFallback && location.status === 'denied' && (
           <View style={styles.locationBanner}>
             <MaterialCommunityIcons name="map-marker-off-outline" size={18} color={COLORS.warningText} />
@@ -291,31 +262,34 @@ export default function LocatorScreen() {
         })}
 
         <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      <View style={styles.heroHead}>
+        <View>
+          <Text style={styles.heroSub}>Localizador</Text>
+          <Text style={styles.heroTitle}>Concessionárias Ford</Text>
+        </View>
+        <HeroIconButton icon="tune-variant" />
+      </View>
+
+      <View style={styles.searchBar}>
+        <MaterialCommunityIcons name="magnify" size={20} color={COLORS.gray} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar por nome ou bairro..."
+          placeholderTextColor={COLORS.gray}
+          value={search}
+          onChangeText={setSearch}
+          autoCorrect={false}
+        />
+        <MaterialCommunityIcons name="crosshairs-gps" size={20} color={COLORS.primary} />
+      </View>
+    </HeroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  /* Hero */
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 50,
-    overflow: 'hidden',
-  },
-  heroBlob: {
-    position: 'absolute',
-    top: -60,
-    right: -40,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
   heroHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -330,14 +304,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   heroTitle: { color: COLORS.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -349,14 +315,6 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, color: COLORS.dark, padding: 0 },
 
-  /* Scroll */
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -28,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { paddingTop: 18, paddingBottom: 30 },
 
   locationBanner: {

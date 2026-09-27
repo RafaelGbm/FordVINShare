@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  StatusBar,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -13,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS, ACCENT_TINTS, ACCENTS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import {
   useLoyaltyBalance,
   useLoyaltyRewards,
@@ -116,68 +116,16 @@ export default function PointsScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob1} />
-        <View style={styles.heroBlob2} />
-
-        <View style={styles.heroHead}>
-          <View>
-            <Text style={styles.heroSub}>Programa de fidelidade</Text>
-            <Text style={styles.heroTitle}>Ford Points</Text>
-          </View>
-          <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="information-outline" size={20} color={COLORS.white} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Points Card */}
-        <View style={styles.pointsCard}>
-          <View style={styles.pointsCardTop}>
-            <View>
-              <Text style={styles.pointsLabel}>Saldo disponível</Text>
-              <View style={styles.pointsValueRow}>
-                {balanceQuery.isLoading ? (
-                  <ActivityIndicator color={COLORS.white} size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.pointsValue}>{balance.toLocaleString('pt-BR')}</Text>
-                    <Text style={styles.pointsUnit}>pts</Text>
-                  </>
-                )}
-              </View>
-            </View>
-            <FordLogo width={70} height={28} style={{ opacity: 0.9 }} />
-          </View>
-
-          <View style={styles.tierRow}>
-            <View style={styles.tierBadge}>
-              <MaterialCommunityIcons name="medal" size={14} color={COLORS.warning} />
-              <Text style={styles.tierText}>{tier.name}</Text>
-            </View>
-            {tier.nextLabel ? (
-              <Text style={styles.tierGoal}>
-                Faltam {(tier.next - balance).toLocaleString('pt-BR')} pra {tier.nextLabel}
-              </Text>
-            ) : (
-              <Text style={styles.tierGoal}>Nível máximo atingido</Text>
-            )}
-          </View>
-
-          <View style={styles.tierBar}>
-            <View style={[styles.tierFill, { width: `${tierPct}%` }]} />
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <HeroScreen
+      blobs={[
+        { size: 200, top: -60, right: -50 },
+        { size: 140, bottom: -30, left: -40 },
+      ]}
+      heroPaddingBottom={80}
+      overlap={-50}
+      contentContainerStyle={styles.scrollContent}
+      bodyChildren={
+        <>
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -365,40 +313,59 @@ export default function PointsScreen() {
         </View>
 
         <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      <View style={styles.heroHead}>
+        <View>
+          <Text style={styles.heroSub}>Programa de fidelidade</Text>
+          <Text style={styles.heroTitle}>Ford Points</Text>
+        </View>
+        <HeroIconButton icon="information-outline" />
+      </View>
+
+      {/* Points Card */}
+      <View style={styles.pointsCard}>
+        <View style={styles.pointsCardTop}>
+          <View>
+            <Text style={styles.pointsLabel}>Saldo disponível</Text>
+            <View style={styles.pointsValueRow}>
+              {balanceQuery.isLoading ? (
+                <ActivityIndicator color={COLORS.white} size="small" />
+              ) : (
+                <>
+                  <Text style={styles.pointsValue}>{balance.toLocaleString('pt-BR')}</Text>
+                  <Text style={styles.pointsUnit}>pts</Text>
+                </>
+              )}
+            </View>
+          </View>
+          <FordLogo width={70} height={28} style={{ opacity: 0.9 }} />
+        </View>
+
+        <View style={styles.tierRow}>
+          <View style={styles.tierBadge}>
+            <MaterialCommunityIcons name="medal" size={14} color={COLORS.warning} />
+            <Text style={styles.tierText}>{tier.name}</Text>
+          </View>
+          {tier.nextLabel ? (
+            <Text style={styles.tierGoal}>
+              Faltam {(tier.next - balance).toLocaleString('pt-BR')} pra {tier.nextLabel}
+            </Text>
+          ) : (
+            <Text style={styles.tierGoal}>Nível máximo atingido</Text>
+          )}
+        </View>
+
+        <View style={styles.tierBar}>
+          <View style={[styles.tierFill, { width: `${tierPct}%` }]} />
+        </View>
+      </View>
+    </HeroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  /* Hero */
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 80,
-    overflow: 'hidden',
-  },
-  heroBlob1: {
-    position: 'absolute',
-    top: -60,
-    right: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  heroBlob2: {
-    position: 'absolute',
-    bottom: -30,
-    left: -40,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
   heroHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -413,14 +380,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   heroTitle: { color: COLORS.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
   /* Points Card */
   pointsCard: {
@@ -462,14 +421,6 @@ const styles = StyleSheet.create({
   tierBar: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
   tierFill: { height: '100%', backgroundColor: COLORS.warningStrong, borderRadius: 3 },
 
-  /* Scroll */
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -50,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { paddingTop: 22, paddingBottom: 30 },
 
   /* Stats */

@@ -3,14 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  StatusBar,
   ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS } from '../../constants';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { useSegmentDistribution } from '../../hooks/useSegments';
 import { LeadSegment } from '../../services/leads.service';
 import { SegmentBucket } from '../../services/segments.service';
@@ -70,58 +69,13 @@ export default function SegmentationScreen() {
   const showContent = !isLoading && !error && data;
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      <View style={styles.hero}>
-        <View style={styles.heroBlob} />
-
-        <View style={styles.heroTop}>
-          <View>
-            <Text style={styles.heroSub}>Análise preditiva</Text>
-            <Text style={styles.heroTitle}>Segmentação</Text>
-          </View>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => refetch()}>
-            <MaterialCommunityIcons
-              name={isRefetching ? 'loading' : 'refresh'}
-              size={20}
-              color={COLORS.white}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.totalCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.totalLabel}>Base total</Text>
-            <View style={styles.totalValueRow}>
-              <Text style={styles.totalValue}>{total.toLocaleString('pt-BR')}</Text>
-              <Text style={styles.totalUnit}>clientes</Text>
-            </View>
-            {data?.computedAt && (
-              <View style={styles.totalDelta}>
-                <MaterialCommunityIcons name="clock-outline" size={11} color="rgba(255,255,255,0.7)" />
-                <Text style={styles.totalDeltaText}>
-                  atualizado {new Date(data.computedAt).toLocaleDateString('pt-BR')}
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.miniRings}>
-            {orderedBuckets.map((b) => (
-              <View key={b.segment} style={styles.miniRingRow}>
-                <View style={[styles.miniDot, { backgroundColor: SEGMENT_META[b.segment].color }]} />
-                <Text style={styles.miniRingText}>{b.percent.toFixed(0)}%</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <HeroScreen
+      blobs={[{ size: 200, top: -60, right: -50 }]}
+      heroPaddingBottom={60}
+      overlap={-28}
+      contentContainerStyle={styles.scrollContent}
+      bodyChildren={
+        <>
         {isLoading && (
           <View style={styles.stateBox}>
             <ActivityIndicator color={COLORS.primary} />
@@ -311,30 +265,47 @@ export default function SegmentationScreen() {
         )}
 
         <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <View>
+          <Text style={styles.heroSub}>Análise preditiva</Text>
+          <Text style={styles.heroTitle}>Segmentação</Text>
+        </View>
+        <HeroIconButton icon={isRefetching ? 'loading' : 'refresh'} onPress={() => refetch()} />
+      </View>
+
+      <View style={styles.totalCard}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.totalLabel}>Base total</Text>
+          <View style={styles.totalValueRow}>
+            <Text style={styles.totalValue}>{total.toLocaleString('pt-BR')}</Text>
+            <Text style={styles.totalUnit}>clientes</Text>
+          </View>
+          {data?.computedAt && (
+            <View style={styles.totalDelta}>
+              <MaterialCommunityIcons name="clock-outline" size={11} color="rgba(255,255,255,0.7)" />
+              <Text style={styles.totalDeltaText}>
+                atualizado {new Date(data.computedAt).toLocaleDateString('pt-BR')}
+              </Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.miniRings}>
+          {orderedBuckets.map((b) => (
+            <View key={b.segment} style={styles.miniRingRow}>
+              <View style={[styles.miniDot, { backgroundColor: SEGMENT_META[b.segment].color }]} />
+              <Text style={styles.miniRingText}>{b.percent.toFixed(0)}%</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </HeroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 60,
-    overflow: 'hidden',
-  },
-  heroBlob: {
-    position: 'absolute',
-    top: -60,
-    right: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
   heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -349,14 +320,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   heroTitle: { color: COLORS.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
   totalCard: {
     flexDirection: 'row',
@@ -389,13 +352,6 @@ const styles = StyleSheet.create({
   miniDot: { width: 8, height: 8, borderRadius: 4 },
   miniRingText: { color: COLORS.white, fontSize: 11, fontWeight: '700', minWidth: 28 },
 
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -28,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { padding: 16, paddingTop: 22 },
 
   stateBox: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20, gap: 8 },

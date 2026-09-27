@@ -3,9 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  StatusBar,
   Dimensions,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,6 +11,7 @@ import { router } from 'expo-router';
 
 import { COLORS, ACCENT_TINTS, ACCENTS } from '../../constants';
 import FordLogo from '../../components/FordLogo';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { StateBox } from '../../components/StateBox';
 import { useMe } from '../../hooks/useAuth';
 import { useMyVehicles, useVehicleWarranty, useMaintenanceAlerts } from '../../hooks/useVehicles';
@@ -81,31 +80,16 @@ export default function HomeScreen() {
     : 0;
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      {/* Hero / Header */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob1} />
-        <View style={styles.heroBlob2} />
-        <View style={styles.heroTop}>
-          <FordLogo width={110} height={44} />
-          <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="bell-outline" size={22} color={COLORS.white} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.heroGreeting}>
-          <Text style={styles.heroHello}>Olá, {me?.fullName?.split(' ')[0] ?? '—'}</Text>
-          <Text style={styles.heroWelcome}>Bem-vindo de volta ao Ford Connect</Text>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <HeroScreen
+      blobs={[
+        { size: 220, top: -80, right: -60 },
+        { size: 140, bottom: -40, left: -30 },
+      ]}
+      heroPaddingBottom={50}
+      overlap={-30}
+      contentContainerStyle={styles.scrollContent}
+      bodyChildren={
+        <>
         {/* Vehicle Card */}
         {vehiclesQuery.isLoading && (
           <View style={styles.vehicleCard}>
@@ -361,54 +345,26 @@ export default function HomeScreen() {
         </View>
 
         <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <FordLogo width={110} height={44} />
+        <HeroIconButton icon="bell-outline" iconSize={22} />
+      </View>
+
+      <View style={styles.heroGreeting}>
+        <Text style={styles.heroHello}>Olá, {me?.fullName?.split(' ')[0] ?? '—'}</Text>
+        <Text style={styles.heroWelcome}>Bem-vindo de volta ao Ford Connect</Text>
+      </View>
+    </HeroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-  },
-
-  /* Hero */
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 50,
-    overflow: 'hidden',
-  },
-  heroBlob1: {
-    position: 'absolute',
-    top: -80,
-    right: -60,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  heroBlob2: {
-    position: 'absolute',
-    bottom: -40,
-    left: -30,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
   heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
     alignItems: 'center',
   },
   heroGreeting: {
@@ -425,14 +381,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  /* Scroll */
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -30,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 18,

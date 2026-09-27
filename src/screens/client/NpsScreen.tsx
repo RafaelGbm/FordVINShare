@@ -3,9 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  StatusBar,
   TextInput,
   ActivityIndicator,
   Alert,
@@ -14,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { COLORS } from '../../constants';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { useSubmitNps } from '../../hooks/useNps';
 import { NpsCategory } from '../../services/nps.service';
 import { ApiError } from '../../services/api';
@@ -80,32 +79,33 @@ export default function NpsScreen() {
   }
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob} />
-
-        <View style={styles.heroTop}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="close" size={22} color={COLORS.white} />
+    <HeroScreen
+      blobs={[{ size: 180, top: -50, right: -40 }]}
+      heroPaddingBottom={40}
+      overlap={-20}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="handled"
+      footer={
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.cta, !canSubmit && styles.ctaDisabled]}
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+            activeOpacity={0.85}
+          >
+            {submit.isPending ? (
+              <ActivityIndicator color={COLORS.white} size="small" />
+            ) : (
+              <>
+                <Text style={styles.ctaText}>Enviar avaliação</Text>
+                <MaterialCommunityIcons name="send" size={18} color={COLORS.white} />
+              </>
+            )}
           </TouchableOpacity>
-          <Text style={styles.heroTitle}>Avaliação do serviço</Text>
-          <View style={{ width: 40 }} />
         </View>
-
-        <Text style={styles.heroSub}>
-          De 0 a 10, o quanto você recomendaria a Ford a um amigo?
-        </Text>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      }
+      bodyChildren={
+        <>
         {/* Score grid 0-10 */}
         <View style={styles.scoreCard}>
           <View style={styles.scoreGrid}>
@@ -220,61 +220,27 @@ export default function NpsScreen() {
         <Text style={styles.counter}>{comment.length}/500</Text>
 
         <View style={{ height: 16 }} />
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.cta, !canSubmit && styles.ctaDisabled]}
-          onPress={handleSubmit}
-          disabled={!canSubmit}
-          activeOpacity={0.85}
-        >
-          {submit.isPending ? (
-            <ActivityIndicator color={COLORS.white} size="small" />
-          ) : (
-            <>
-              <Text style={styles.ctaText}>Enviar avaliação</Text>
-              <MaterialCommunityIcons name="send" size={18} color={COLORS.white} />
-            </>
-          )}
-        </TouchableOpacity>
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <HeroIconButton icon="close" onPress={() => router.back()} />
+        <Text style={styles.heroTitle}>Avaliação do serviço</Text>
+        <View style={{ width: 40 }} />
       </View>
-    </View>
+      <Text style={styles.heroSub}>
+        De 0 a 10, o quanto você recomendaria a Ford a um amigo?
+      </Text>
+    </HeroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    overflow: 'hidden',
-  },
-  heroBlob: {
-    position: 'absolute',
-    top: -50,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 18,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
   heroSub: {
@@ -283,13 +249,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -20,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { padding: 20, paddingTop: 22, paddingBottom: 24 },
 
   scoreCard: {

@@ -3,15 +3,14 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  StatusBar,
   ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { COLORS, ACCENTS } from '../../constants';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { useCustomer360, useCustomerTimeline } from '../../hooks/useCustomers';
 import { ApiError } from '../../services/api';
 import { LeadSegment } from '../../services/leads.service';
@@ -111,50 +110,16 @@ export default function Customer360Screen() {
   const segmentMeta = SEGMENT_META[segment];
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={styles.heroBlob1} />
-        <View style={styles.heroBlob2} />
-
-        <View style={styles.heroTop}>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="chevron-left" size={24} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.heroTitle}>Visão 360</Text>
-          <TouchableOpacity style={styles.iconBtn}>
-            <MaterialCommunityIcons name="dots-vertical" size={20} color={COLORS.white} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials(customer.name)}</Text>
-          </View>
-          <Text style={styles.customerName}>{customer.name}</Text>
-          <Text style={styles.customerCpf}>{customer.cpfMasked}</Text>
-
-          <View style={styles.segmentRow}>
-            <View style={[styles.segmentBadge, { backgroundColor: segmentMeta.bg }]}>
-              <Text style={[styles.segmentText, { color: segmentMeta.color }]}>
-                {segmentMeta.label}
-              </Text>
-            </View>
-            <View style={styles.scorePill}>
-              <MaterialCommunityIcons name="speedometer" size={12} color={COLORS.white} />
-              <Text style={styles.scoreText}>Risco {riskScore}/100</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <HeroScreen
+      blobs={[
+        { size: 200, top: -60, right: -50 },
+        { size: 130, bottom: -30, left: -30 },
+      ]}
+      heroPaddingBottom={60}
+      overlap={-30}
+      contentContainerStyle={styles.scrollContent}
+      bodyChildren={
+        <>
         {/* Contact */}
         <View style={styles.contactRow}>
           <TouchableOpacity style={styles.contactBtnPrimary} activeOpacity={0.85}>
@@ -270,14 +235,39 @@ export default function Customer360Screen() {
         ))}
 
         <View style={{ height: 24 }} />
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <HeroIconButton icon="chevron-left" onPress={() => router.back()} />
+        <Text style={styles.heroTitle}>Visão 360</Text>
+        <HeroIconButton icon="dots-vertical" />
+      </View>
+
+      <View style={styles.profileCard}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{initials(customer.name)}</Text>
+        </View>
+        <Text style={styles.customerName}>{customer.name}</Text>
+        <Text style={styles.customerCpf}>{customer.cpfMasked}</Text>
+
+        <View style={styles.segmentRow}>
+          <View style={[styles.segmentBadge, { backgroundColor: segmentMeta.bg }]}>
+            <Text style={[styles.segmentText, { color: segmentMeta.color }]}>
+              {segmentMeta.label}
+            </Text>
+          </View>
+          <View style={styles.scorePill}>
+            <MaterialCommunityIcons name="speedometer" size={12} color={COLORS.white} />
+            <Text style={styles.scoreText}>Risco {riskScore}/100</Text>
+          </View>
+        </View>
+      </View>
+    </HeroScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
   splash: {
     flex: 1,
     backgroundColor: COLORS.primary,
@@ -296,45 +286,11 @@ const styles = StyleSheet.create({
   },
   splashBtnText: { color: COLORS.primary, fontWeight: '800' },
 
-  /* Hero */
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 60,
-    overflow: 'hidden',
-  },
-  heroBlob1: {
-    position: 'absolute',
-    top: -60,
-    right: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  heroBlob2: {
-    position: 'absolute',
-    bottom: -30,
-    left: -30,
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   heroTitle: { color: COLORS.white, fontSize: 18, fontWeight: '800' },
 
@@ -365,14 +321,6 @@ const styles = StyleSheet.create({
   },
   scoreText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
 
-  /* Scroll */
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -30,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { padding: 16, paddingTop: 22 },
 
   /* Contact */

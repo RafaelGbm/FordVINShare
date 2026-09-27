@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  StatusBar,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -14,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { COLORS, ACCENTS } from '../../constants';
+import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { useCreateLeadAction, useLeads } from '../../hooks/useLeads';
 import { Lead, LeadStatus } from '../../services/leads.service';
 import { ApiError } from '../../services/api';
@@ -84,46 +84,13 @@ export default function LeadsScreen() {
   }, [leads, filter, search]);
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-
-      <View style={styles.hero}>
-        <View style={styles.heroBlob} />
-
-        <View style={styles.heroTop}>
-          <View>
-            <Text style={styles.heroSub}>Gestão de carteira</Text>
-            <Text style={styles.heroTitle}>Leads</Text>
-          </View>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => refetch()}>
-            <MaterialCommunityIcons
-              name={isRefetching ? 'loading' : 'refresh'}
-              size={20}
-              color={COLORS.white}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.searchBar}>
-          <MaterialCommunityIcons name="magnify" size={20} color={COLORS.gray} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar lead por nome..."
-            placeholderTextColor={COLORS.gray}
-            value={search}
-            onChangeText={setSearch}
-          />
-          <TouchableOpacity>
-            <MaterialCommunityIcons name="tune-variant" size={20} color={COLORS.primary} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <HeroScreen
+      blobs={[{ size: 180, top: -50, right: -40 }]}
+      heroPaddingBottom={50}
+      overlap={-28}
+      contentContainerStyle={styles.scrollContent}
+      bodyChildren={
+        <>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -205,8 +172,31 @@ export default function LeadsScreen() {
         )}
 
         <View style={{ height: 20 }} />
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      <View style={styles.heroTop}>
+        <View>
+          <Text style={styles.heroSub}>Gestão de carteira</Text>
+          <Text style={styles.heroTitle}>Leads</Text>
+        </View>
+        <HeroIconButton icon={isRefetching ? 'loading' : 'refresh'} onPress={() => refetch()} />
+      </View>
+
+      <View style={styles.searchBar}>
+        <MaterialCommunityIcons name="magnify" size={20} color={COLORS.gray} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar lead por nome..."
+          placeholderTextColor={COLORS.gray}
+          value={search}
+          onChangeText={setSearch}
+        />
+        <TouchableOpacity>
+          <MaterialCommunityIcons name="tune-variant" size={20} color={COLORS.primary} />
+        </TouchableOpacity>
+      </View>
+    </HeroScreen>
   );
 }
 
@@ -349,24 +339,6 @@ function LeadCard({ lead }: { lead: Lead }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.primary },
-
-  hero: {
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 50,
-    overflow: 'hidden',
-  },
-  heroBlob: {
-    position: 'absolute',
-    top: -50,
-    right: -40,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
   heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -381,14 +353,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   heroTitle: { color: COLORS.white, fontSize: 22, fontWeight: '800', marginTop: 4 },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -400,13 +364,6 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, color: COLORS.dark, padding: 0 },
 
-  scrollArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    marginTop: -28,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
   scrollContent: { paddingTop: 18, paddingBottom: 30 },
 
   filtersScroll: { marginBottom: 12 },
