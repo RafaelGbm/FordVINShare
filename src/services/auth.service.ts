@@ -1,4 +1,5 @@
 import { api, configureAuth } from './api';
+import { devicesService } from './devices.service';
 import { secureStorage } from './secureStorage';
 
 export type UserRole = 'CLIENT' | 'ANALYST' | 'ADMIN';
@@ -50,11 +51,30 @@ export const authService = {
     return data.accessToken;
   },
 
+  /**
+   * Ends the session on the server and on the device. The push token is
+   * unregistered first (it needs the access token); then the refresh token is
+   * revoked through the public /auth/logout. Local state is cleared even if
+   * the server calls fail.
+   */
   async logout(): Promise<void> {
-    try {
-      await api.post('/auth/logout');
-    } catch {
-      // even if the server call fails, clear local state
+    const [refreshToken, pushToken] = await Promise.all([
+      secureStorage.getRefreshToken(),
+      secureStorage.getPushToken(),
+    ]);
+    if (pushToken) {
+      try {
+        await devicesService.unregister(pushToken);
+      } catch {
+        // offline or already expired: the next login on this phone replaces it
+      }
+    }
+    if (refreshToken) {
+      try {
+        await api.post('/auth/logout', { refreshToken });
+      } catch {
+        // even if the server call fails, clear local state
+      }
     }
     await secureStorage.clear();
   },

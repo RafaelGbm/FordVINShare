@@ -1,18 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
 
-import {
-  devicesService,
-  RegisterDeviceInput,
-} from '../services/devices.service';
+import { devicesService, DevicePlatform } from '../services/devices.service';
 
 export function useRegisterDevice() {
   return useMutation({
-    mutationFn: (input: RegisterDeviceInput) => devicesService.register(input),
+    mutationFn: ({ token, platform }: { token: string; platform: DevicePlatform }) =>
+      devicesService.register(token, platform),
   });
 }
 
 export function useUnregisterDevice() {
   return useMutation({
-    mutationFn: (expoPushToken: string) => devicesService.unregister(expoPushToken),
+    mutationFn: (token: string) => devicesService.unregister(token),
   });
 }

@@ -184,8 +184,18 @@ api.interceptors.response.use(
           `Bearer ${newToken}`;
 
         return api.request(originalRequest);
-      } catch {
+      } catch (refreshError) {
         refreshPromise = null;
+        // Only a rejected refresh token (400/401) or a missing one ends the
+        // session. Rate limit, server errors and flaky networks fail just this
+        // request: the user stays logged in and the next call tries again.
+        if (
+          refreshError instanceof ApiError &&
+          refreshError.problem.status !== 400 &&
+          refreshError.problem.status !== 401
+        ) {
+          throw refreshError;
+        }
         await secureStorage.clear();
         onUnauthenticated?.();
         throw new ApiError({

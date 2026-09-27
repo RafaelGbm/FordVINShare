@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { COLORS, ACCENTS } from '../../constants';
 import { HeroIconButton, HeroScreen } from '../../components/HeroScreen';
 import { useCreateLeadAction, useLeads } from '../../hooks/useLeads';
+import { useMe } from '../../hooks/useAuth';
 import { Lead, LeadStatus } from '../../services/leads.service';
 import { ApiError } from '../../services/api';
 
@@ -61,7 +62,11 @@ export default function LeadsScreen() {
   const [filter, setFilter] = useState<UiStatus>('all');
   const [search, setSearch] = useState('');
 
-  const { data, isLoading, error, refetch, isRefetching } = useLeads({ size: 200 });
+  // The API caps pages at 100 items; analysts only see their own dealership, well below that.
+  const { data, isLoading, error, refetch, isRefetching } = useLeads({ size: 100 });
+  // Contact actions belong to the dealership analyst; the API answers 403 to ADMIN.
+  const { data: me } = useMe();
+  const canContact = me?.role === 'ANALYST';
   const leads = useMemo(() => data?.content ?? [], [data]);
 
   const counts = useMemo(() => {
@@ -160,7 +165,7 @@ export default function LeadsScreen() {
         )}
 
         {!isLoading && !error && filteredLeads.map((l) => (
-          <LeadCard key={l.id} lead={l} />
+          <LeadCard key={l.id} lead={l} canContact={canContact} />
         ))}
 
         {!isLoading && !error && filteredLeads.length === 0 && (
@@ -200,7 +205,7 @@ export default function LeadsScreen() {
   );
 }
 
-function LeadCard({ lead }: { lead: Lead }) {
+function LeadCard({ lead, canContact }: { lead: Lead; canContact: boolean }) {
   const uiStatus = API_TO_UI[lead.status];
   const meta = STATUS_META[uiStatus];
   const initials = initialsFromName(lead.customerName);
@@ -212,8 +217,8 @@ function LeadCard({ lead }: { lead: Lead }) {
     action.mutate(
       { channel: 'WHATSAPP', templateId: 'RETORNO_REVISAO_DESCONTO' },
       {
-        onSuccess: (res) => {
-          Alert.alert('Mensagem registrada', `Ação ${res.actionId} enviada via WhatsApp`);
+        onSuccess: () => {
+          Alert.alert('Mensagem registrada', 'O contato por WhatsApp foi registrado no histórico do cliente.');
         },
         onError: (err) => {
           const message =
@@ -226,10 +231,10 @@ function LeadCard({ lead }: { lead: Lead }) {
 
   function triggerCall() {
     action.mutate(
-      { channel: 'CALL', templateId: 'LIGACAO_RETENCAO' },
+      { channel: 'PHONE', templateId: 'LIGACAO_RETENCAO' },
       {
-        onSuccess: (res) => {
-          Alert.alert('Ligação registrada', `Ação ${res.actionId} agendada`);
+        onSuccess: () => {
+          Alert.alert('Ligação registrada', 'A ligação foi registrada no histórico do cliente.');
         },
         onError: (err) => {
           const message =
@@ -291,11 +296,11 @@ function LeadCard({ lead }: { lead: Lead }) {
         </View>
         {lead.lastNpsScore != null && (
           <>
-            <View style={styles.leadStatSep} />
-            <View style={styles.leadStat}>
-              <MaterialCommunityIcons name="star" size={12} color={COLORS.warning} />
-              <Text style={styles.leadStatText}>NPS {lead.lastNpsScore}</Text>
-            </View>
+              <View style={styles.leadStatSep} />
+              <View style={styles.leadStat}>
+                <MaterialCommunityIcons name="star" size={12} color={COLORS.warning} />
+                <Text style={styles.leadStatText}>NPS {lead.lastNpsScore}</Text>
+              </View>
           </>
         )}
       </View>
@@ -308,24 +313,30 @@ function LeadCard({ lead }: { lead: Lead }) {
       )}
 
       <View style={styles.leadActions}>
-        <TouchableOpacity
-          style={[styles.actionPrimary, action.isPending && { opacity: 0.6 }]}
-          activeOpacity={0.85}
-          onPress={triggerCall}
-          disabled={action.isPending}
-        >
-          <MaterialCommunityIcons name="phone" size={16} color={COLORS.white} />
-          <Text style={styles.actionPrimaryText}>Ligar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionSecondary, action.isPending && { opacity: 0.6 }]}
-          activeOpacity={0.85}
-          onPress={triggerWhatsapp}
-          disabled={action.isPending}
-        >
-          <MaterialCommunityIcons name="message-text" size={16} color={COLORS.primary} />
-          <Text style={styles.actionSecondaryText}>WhatsApp</Text>
-        </TouchableOpacity>
+        {canContact ? (
+          <>
+          <TouchableOpacity
+            style={[styles.actionPrimary, action.isPending && { opacity: 0.6 }]}
+            activeOpacity={0.85}
+            onPress={triggerCall}
+            disabled={action.isPending}
+          >
+            <MaterialCommunityIcons name="phone" size={16} color={COLORS.white} />
+            <Text style={styles.actionPrimaryText}>Ligar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionSecondary, action.isPending && { opacity: 0.6 }]}
+            activeOpacity={0.85}
+            onPress={triggerWhatsapp}
+            disabled={action.isPending}
+          >
+            <MaterialCommunityIcons name="message-text" size={16} color={COLORS.primary} />
+            <Text style={styles.actionSecondaryText}>WhatsApp</Text>
+          </TouchableOpacity>
+          </>
+        ) : (
+          <Text style={styles.contactNote}>Contato feito pelo analista da concessionária</Text>
+        )}
         <TouchableOpacity
           style={styles.actionIcon}
           activeOpacity={0.85}
@@ -474,6 +485,7 @@ const styles = StyleSheet.create({
   suggestionText: { flex: 1, fontSize: 11, color: COLORS.warningText, fontWeight: '600', lineHeight: 15 },
 
   leadActions: { flexDirection: 'row', gap: 8 },
+  contactNote: { flex: 1, alignSelf: 'center', fontSize: 12, color: COLORS.gray },
   actionPrimary: {
     flex: 1,
     flexDirection: 'row',

@@ -1,15 +1,16 @@
 import { useEffect, useRef } from 'react';
-import Constants from 'expo-constants';
 
 import { getExpoPushRegistration } from '../utils/pushNotifications';
 import { useRegisterDevice } from './useDevices';
 import { useAuthStore } from '../utils/store';
+import { secureStorage } from '../services/secureStorage';
 
 /**
- * Registers the device's Expo push token with the backend the first time
- * the user is authenticated in this app session. Silently no-ops if
- * permission is denied, if the token can't be obtained (typical in Expo
- * Go without EAS) or if the backend register call fails.
+ * Registers the device's Expo push token with the backend once per login.
+ * Silently no-ops if permission is denied or the token can't be obtained
+ * (typical in Expo Go without EAS). The registered token is kept so logout
+ * can unregister it; a failed attempt waits for the next login instead of
+ * retrying on every render.
  */
 export function usePushRegistration() {
   const role = useAuthStore((state) => state.role);
@@ -17,7 +18,12 @@ export function usePushRegistration() {
   const attemptedRef = useRef(false);
 
   useEffect(() => {
-    if (!role || attemptedRef.current) return;
+    if (!role) {
+      // Logged out: the next account that signs in registers again.
+      attemptedRef.current = false;
+      return;
+    }
+    if (attemptedRef.current) return;
     attemptedRef.current = true;
 
     (async () => {
@@ -25,17 +31,11 @@ export function usePushRegistration() {
       if (!registration) return;
 
       try {
-        await register.mutateAsync({
-          expoPushToken: registration.token,
-          platform: registration.platform,
-          appVersion: Constants.expoConfig?.version ?? '0.0.0',
-          consentAt: new Date().toISOString(),
-        });
+        await register.mutateAsync({ token: registration.token, platform: registration.platform });
+        await secureStorage.setPushToken(registration.token);
       } catch (e) {
-        // Backend rejected the token (could be 401 mid-refresh, or
-        // server error). We'll try again next session.
+        // 409 = token still active for another account; other errors are transient.
         console.warn('Failed to register device with backend', e);
-        attemptedRef.current = false;
       }
     })();
   }, [role, register]);

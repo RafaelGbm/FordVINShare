@@ -6,7 +6,8 @@ export type LeadStatus = 'NOVO' | 'EM_RISCO' | 'PERDIDO' | 'RECUPERADO';
 
 export type LeadSegment = 'FIEL' | 'ECONOMICO' | 'ESQUECIDO' | 'ABANDONO';
 
-export type LeadActionChannel = 'WHATSAPP' | 'EMAIL' | 'SMS' | 'CALL';
+/** LeadChannel on the API. */
+export type LeadActionChannel = 'WHATSAPP' | 'EMAIL' | 'PHONE' | 'PUSH';
 
 export interface Lead {
   id: string;
@@ -43,10 +44,15 @@ export interface LeadActionInput {
   notes?: string;
 }
 
+/** LeadActionResponseDTO. */
 export interface LeadActionResult {
-  actionId: string;
-  sentAt: string;
+  id: string;
+  customerId: string;
   channel: LeadActionChannel;
+  templateId: string | null;
+  status: LeadStatus;
+  simulated: boolean;
+  createdAt: string;
 }
 
 export const leadsService = {
